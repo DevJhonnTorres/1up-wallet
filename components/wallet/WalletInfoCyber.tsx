@@ -6,6 +6,7 @@ import SendTokenModalTailwind from './SendTokenModalTailwind';
 import QRScannerTailwind from './QRScannerTailwind';
 import { parseUnits, encodeFunctionData } from 'viem';
 import { useTokenPrices } from '../../hooks/useTokenPrices';
+import NetworkSwitcher from '../NetworkSwitcher';
 
 interface WalletInfoProps {
   wallet: Wallet;
@@ -13,6 +14,7 @@ interface WalletInfoProps {
   isLoading: boolean;
   onRefresh: () => void;
   chainId?: number;
+  onChainChange?: (chainId: number) => void;
 }
 
 const WalletInfoCyber: React.FC<WalletInfoProps> = ({
@@ -20,7 +22,8 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
   balances,
   isLoading,
   onRefresh,
-  chainId = 8453
+  chainId = 8453,
+  onChainChange
 }) => {
   const { exportWallet } = usePrivy();
   const { wallets } = useWallets();
@@ -32,6 +35,8 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
   const [txHash, setTxHash] = useState<string | null>(null);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [scannedAddress, setScannedAddress] = useState<string | null>(null);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [showNetworks, setShowNetworks] = useState(false);
   
   const privyWallet = wallets?.find(w => w.address.toLowerCase() === wallet.address.toLowerCase());
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${wallet.address}`;
@@ -202,17 +207,53 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
       
       <div className="relative bg-black p-6 rounded-2xl border border-cyan-500/30">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent font-mono">
-            WALLET_INTERFACE
-          </h3>
-          <button 
-            onClick={onRefresh}
-            disabled={isLoading}
-            className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/50 rounded-lg text-cyan-400 text-sm font-mono transition-all"
-          >
-            {isLoading ? '⟳' : '↻'} SYNC
-          </button>
+        <div className="flex flex-col gap-3 mb-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent font-mono">
+              WALLET_INTERFACE
+            </h3>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={onRefresh}
+                disabled={isLoading}
+                className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/50 rounded-lg text-cyan-400 text-sm font-mono transition-all"
+              >
+                {isLoading ? '⟳' : '↻'} SYNC
+              </button>
+            </div>
+          </div>
+
+          {/* Chain switcher + Export keys */}
+          <div className="p-3 bg-gray-900/60 border border-cyan-500/30 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowNetworks(!showNetworks)}
+                  className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/50 rounded-lg text-cyan-300 text-xs font-mono transition-all"
+                >
+                  {showNetworks ? '▲ CHAINS' : '▼ CHAINS'}
+                </button>
+                <span className="text-xs text-gray-400 font-mono">Current: {chainId === 1 ? 'Ethereum' : chainId === 8453 ? 'Base' : chainId === 10 ? 'Optimism' : chainId}</span>
+              </div>
+              <button
+                onClick={handleExportWallet}
+                className="px-3 py-1.5 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/50 rounded-lg text-cyan-300 text-xs font-mono font-bold transition-all"
+              >
+                🔐 EXPORT_KEYS
+              </button>
+            </div>
+            {showNetworks && (
+              <div className="mt-3">
+                <NetworkSwitcher
+                  currentChainId={chainId}
+                  onNetworkChange={(id) => {
+                    if (onChainChange) onChainChange(id);
+                    setShowNetworks(false);
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Address Display */}
@@ -237,6 +278,12 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
               >
                 SCAN
               </a>
+              <button
+                onClick={() => setIsQRModalOpen(true)}
+                className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/50 rounded text-cyan-400 text-xs font-mono"
+              >
+                QR
+              </button>
             </div>
           </div>
         </div>
@@ -334,22 +381,6 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={handleExportWallet}
-            className="px-4 py-3 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 border border-cyan-500/50 rounded-xl text-cyan-400 font-mono font-bold transition-all"
-          >
-            🔐 EXPORT_KEYS
-          </button>
-          <button
-            onClick={() => setIsQRScannerOpen(true)}
-            className="px-4 py-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/50 rounded-xl text-purple-400 font-mono font-bold transition-all"
-          >
-            📱 SCAN_QR
-          </button>
-        </div>
-
         {/* Transaction Success */}
         {txHash && (
           <div className="mt-4 p-4 bg-green-500/10 border border-green-500/50 rounded-xl">
@@ -388,6 +419,40 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
             setIsSendModalOpen(true);
           }}
         />
+      )}
+
+      {/* QR Modal */}
+      {isQRModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="relative w-80 max-w-sm bg-gray-900 border border-cyan-500/40 rounded-2xl p-6 shadow-2xl">
+            <button
+              onClick={() => setIsQRModalOpen(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-white text-xl"
+              aria-label="Close QR modal"
+            >
+              ×
+            </button>
+            <p className="text-xs text-gray-400 font-mono mb-3 text-center">WALLET_QR_CODE</p>
+            <div className="flex justify-center">
+              <div className="p-3 bg-white rounded-xl shadow-2xl border-2 border-cyan-500/30">
+                <img 
+                  src={qrCodeUrl} 
+                  alt="Wallet QR Code" 
+                  className="w-56 h-56"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 font-mono mt-3 text-center">
+              Scan to receive funds
+            </p>
+            <button
+              onClick={() => navigator.clipboard.writeText(wallet.address)}
+              className="mt-4 w-full px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/50 rounded-lg text-cyan-400 text-xs font-mono transition-all"
+            >
+              COPY_ADDRESS
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

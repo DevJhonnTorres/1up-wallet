@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import dynamic from 'next/dynamic';
 import Layout from '../components/shared/Layout';
@@ -41,8 +41,45 @@ export default function Home() {
     }
   };
 
-  // Show loading state while Privy initializes
+  // Show loading state while Privy initializes with timeout
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  
+  React.useEffect(() => {
+    // Set a timeout to show error if Privy doesn't initialize within 10 seconds
+    const timer = setTimeout(() => {
+      if (!ready) {
+        setLoadingTimeout(true);
+        console.error('Privy initialization timeout - check NEXT_PUBLIC_PRIVY_APP_ID environment variable');
+      }
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [ready]);
+
   if (!ready) {
+    if (loadingTimeout) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white p-6">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-4 text-red-400">Initialization Error</h2>
+            <p className="text-gray-400 mb-4">
+              The wallet is taking too long to initialize. Please check:
+            </p>
+            <ul className="text-left text-sm text-gray-500 space-y-2 mb-4">
+              <li>• Environment variables are configured correctly</li>
+              <li>• NEXT_PUBLIC_PRIVY_APP_ID is set in Vercel</li>
+              <li>• Network connection is stable</li>
+            </ul>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
     return <Loading fullScreen={true} text="Loading ETH CALI Wallet..." />;
   }
 
@@ -121,17 +158,6 @@ export default function Home() {
             {userWallet ? (
               <div className="space-y-6">
                 {/* Network Switcher */}
-                <div className="flex justify-center">
-                  <NetworkSwitcher 
-                    currentChainId={currentChainId}
-                    onNetworkChange={(newChainId) => {
-                      console.log(`🔄 Switching to chain ${newChainId}`);
-                      setCurrentChainId(newChainId);
-                      setTimeout(() => refreshBalances(), 100);
-                    }}
-                  />
-                </div>
-                
                 {/* Embedded Wallet */}
                 <div className="space-y-2" key={currentChainId}>
                   <WalletInfoCyber 
@@ -140,6 +166,11 @@ export default function Home() {
                     isLoading={isBalanceLoading}
                     onRefresh={refreshBalances}
                     chainId={currentChainId}
+                    onChainChange={(newChainId) => {
+                      console.log(`🔄 Switching to chain ${newChainId}`);
+                      setCurrentChainId(newChainId);
+                      setTimeout(() => refreshBalances(), 100);
+                    }}
                   />
                 </div>
               </div>

@@ -40,19 +40,20 @@ export function getTokenLogoUrl(tokenSymbol: string): string {
 }
 
 /**
- * Get network logo URL
- * @param networkId The network ID (1 for Ethereum, 8453 for Base)
+ * Get network logo URL using local chain logos from public/chains folder
+ * @param networkId The network ID (1 for Ethereum, 8453 for Base, 10 for Optimism)
  * @returns The URL to the network logo
  */
 export function getNetworkLogoUrl(networkId: number): string {
   switch (networkId) {
-    case 1: // Ethereum
-      return `${COINGECKO_IMAGE_URL}/279/small/ethereum.png`;
-    case 8453: // Base
-      return 'https://avatars.githubusercontent.com/u/108554348?s=280&v=4';
-    case 10: // Optimism
-      return `${COINGECKO_IMAGE_URL}/25244/small/Optimism.png`;
+    case 1: // Ethereum Mainnet
+      return '/chains/ethereum.png';
+    case 8453: // Base Mainnet
+      return '/chains/base logo.svg';
+    case 10: // Optimism Mainnet
+      return '/chains/op mainnet.png';
     default:
+      // Fallback to default
       return '/images/network-default.png';
   }
 }

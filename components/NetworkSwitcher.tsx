@@ -1,4 +1,5 @@
 import React from 'react';
+import { getNetworkLogoUrl } from '../utils/tokenUtils';
 
 interface NetworkSwitcherProps {
   currentChainId: number;
@@ -9,14 +10,14 @@ const NETWORKS = [
   {
     id: 8453,
     name: 'Base',
-    icon: '🔵',
+    logoUrl: getNetworkLogoUrl(8453),
     activeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
     inactiveColor: 'bg-gray-800 text-gray-500 border-gray-700'
   },
   {
     id: 1,
     name: 'Ethereum',
-    icon: '💎',
+    logoUrl: getNetworkLogoUrl(1),
     activeColor: 'bg-purple-500/20 text-purple-400 border-purple-500/50',
     inactiveColor: 'bg-gray-800 text-gray-500 border-gray-700'
   }
@@ -42,7 +43,20 @@ export default function NetworkSwitcher({ currentChainId, onNetworkChange }: Net
               hover:scale-105
             `}
           >
-            <span className="text-xl">{network.icon}</span>
+            <img 
+              src={network.logoUrl} 
+              alt={`${network.name} logo`}
+              className={`w-6 h-6 object-contain ${network.logoUrl.includes('.svg') ? '' : 'rounded-full'}`}
+              onError={(e) => {
+                // Fallback to emoji if image fails to load
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const emoji = network.id === 8453 ? '🔵' : '💎';
+                if (!target.parentElement?.querySelector('.fallback-emoji')) {
+                  target.parentElement?.insertAdjacentHTML('beforeend', `<span class="text-xl fallback-emoji">${emoji}</span>`);
+                }
+              }}
+            />
             <span className="text-sm">{network.name.toUpperCase()}</span>
           </button>
         );

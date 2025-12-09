@@ -8,6 +8,11 @@ function MyApp({ Component, pageProps }: AppProps) {
   // App ID from the Privy Dashboard (using environment variable)
   const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID || "cmavjopg6021ilh0ng5vnr5gc";
   
+  // Log in development to help debug
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.log('🔐 Privy App ID:', PRIVY_APP_ID ? 'Configured' : 'Missing');
+  }
+  
   // Define metadata constants
   const title = 'ETH CALI - Web3 Wallet';
   const description = 'A secure and easy-to-use Ethereum wallet to get into web3 easily. Fully open-sourced with gas fees sponsored by ETH CALI.';
@@ -51,8 +56,8 @@ function MyApp({ Component, pageProps }: AppProps) {
           },
           embeddedWallets: {
             createOnLogin: 'all-users',
-            showWalletUIs: true
-          }
+            showWalletUIs: true,
+          },
         }}
       >
         <Component {...pageProps} />
