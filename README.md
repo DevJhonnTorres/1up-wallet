@@ -32,7 +32,7 @@ A secure and easy-to-use Ethereum wallet application built with Next.js and Priv
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 20.x (LTS)
+- Node.js 22.x
 - npm or yarn
 
 ### Installation
