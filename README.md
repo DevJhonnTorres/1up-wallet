@@ -49,13 +49,14 @@ A secure and easy-to-use Ethereum wallet application built with Next.js and Priv
    ```
 
 3. **Environment Setup:**
-   Create a `.env.local` file with your configuration:
+   Create a `.env.local` (or `.env`) file with your configuration:
    ```env
-   NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
-   NEXT_PUBLIC_BICONOMY_API_KEY=your_biconomy_api_key
-   NEXT_PUBLIC_BICONOMY_PAYMASTER_URL=your_paymaster_url
-   NEXT_PUBLIC_BICONOMY_PAYMASTER_ID=your_paymaster_id
-   NEXT_PUBLIC_BICONOMY_BUNDLER_URL=your_bundler_url
+   PRIVY_APP_ID=your_privy_app_id
+   PRIVY_APP_SECRET=your_privy_app_secret
+   BICONOMY_API_KEY=your_biconomy_api_key
+   BICONOMY_PAYMASTER_URL=your_paymaster_url
+   BICONOMY_PAYMASTER_ID=your_paymaster_id
+   BICONOMY_BUNDLER_URL=your_bundler_url
    ```
 
 4. **Run the development server:**
@@ -120,11 +121,12 @@ ethcaliwallet/
    ```
 
 2. **Set Environment Variables** in Vercel Dashboard:
-   - `NEXT_PUBLIC_PRIVY_APP_ID`
-   - `NEXT_PUBLIC_BICONOMY_API_KEY`
-   - `NEXT_PUBLIC_BICONOMY_PAYMASTER_URL`
-   - `NEXT_PUBLIC_BICONOMY_PAYMASTER_ID`
-   - `NEXT_PUBLIC_BICONOMY_BUNDLER_URL`
+- `PRIVY_APP_ID`
+- `PRIVY_APP_SECRET`
+- `BICONOMY_API_KEY`
+- `BICONOMY_PAYMASTER_URL`
+- `BICONOMY_PAYMASTER_ID`
+- `BICONOMY_BUNDLER_URL`
 
 3. **Deploy:**
    ```bash
