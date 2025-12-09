@@ -93,11 +93,16 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
     }
 
     setIsSendingTx(true);
+    setTxHash(null);
 
     try {
+      // Get the provider from the wallet
+      const provider = await privyWallet.getEthereumProvider();
+      
       if (selectedToken === 'ETH') {
-        const valueHex = `0x${(parseFloat(amount) * 1e18).toString(16)}`;
-        const tx = await privyWallet.request({
+        const value = parseUnits(amount, 18);
+        const valueHex = `0x${value.toString(16)}`;
+        const tx = await provider.request({
           method: 'eth_sendTransaction',
           params: [{
             from: wallet.address,
@@ -131,7 +136,7 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
           args: [recipient as `0x${string}`, usdcAmount]
         });
         
-        const tx = await privyWallet.request({
+        const tx = await provider.request({
           method: 'eth_sendTransaction',
           params: [{
             from: wallet.address,
@@ -165,7 +170,7 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
           args: [recipient as `0x${string}`, eurcAmount]
         });
         
-        const tx = await privyWallet.request({
+        const tx = await provider.request({
           method: 'eth_sendTransaction',
           params: [{
             from: wallet.address,
@@ -364,26 +369,20 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
       {/* Modals */}
       {isSendModalOpen && (
         <SendTokenModalTailwind
-          isOpen={isSendModalOpen}
           onClose={() => setIsSendModalOpen(false)}
           onSend={handleSendToken}
           tokenType={selectedToken}
           balance={selectedToken === 'ETH' ? balances.ethBalance : selectedToken === 'USDC' ? balances.uscBalance : balances.eurcBalance}
           isSending={isSendingTx}
           txHash={txHash}
-          scannedAddress={scannedAddress}
-          onOpenScanner={() => {
-            setIsSendModalOpen(false);
-            setIsQRScannerOpen(true);
-          }}
+          initialRecipient={scannedAddress || ''}
         />
       )}
 
       {isQRScannerOpen && (
         <QRScannerTailwind
-          isOpen={isQRScannerOpen}
           onClose={() => setIsQRScannerOpen(false)}
-          onScanSuccess={(address) => {
+          onScan={(address) => {
             setScannedAddress(address);
             setIsQRScannerOpen(false);
             setIsSendModalOpen(true);
@@ -395,4 +394,5 @@ const WalletInfoCyber: React.FC<WalletInfoProps> = ({
 };
 
 export default WalletInfoCyber;
+
 
