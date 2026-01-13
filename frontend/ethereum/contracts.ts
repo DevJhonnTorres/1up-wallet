@@ -1,9 +1,10 @@
-{
-  "network": "unichain",
-  "chainId": 130,
+// Auto-generated contract addresses and types for Ethereum Mainnet
+export const CONTRACTS = {
+  "network": "ethereum",
+  "chainId": 1,
   "contracts": {
     "ZKPassportNFT": {
-      "address": "0x01401f4802bcD0e1Ee4fA7E42a1b7f48Ab82d121",
+      "address": "0x76235436cbD3F2ff12CC3610f2643654211Efb3d",
       "abi": [
         {
           "inputs": [
@@ -803,7 +804,7 @@
       ]
     },
     "FaucetVault": {
-      "address": "0x016d7D55708f7b7b39693e2b46D69F290537420B",
+      "address": "0x9Df46E1C221F8b067343f9B760F5Cb2c4757FE2d",
       "abi": [
         {
           "inputs": [
@@ -1176,7 +1177,7 @@
       ]
     },
     "Swag1155": {
-      "address": "0x46Fb79966210f4d2C3c1Fb1a5c05330B401FDf5C",
+      "address": "0x25B43cE10ffD04Cb90123D7582E6B5100B27f9cB",
       "abi": [
         {
           "inputs": [
@@ -2108,4 +2109,12 @@
       ]
     }
   }
-}
+} as const;
+
+export const ADDRESSES = {
+  ZKPassportNFT: "0x76235436cbD3F2ff12CC3610f2643654211Efb3d",
+  FaucetVault: "0x9Df46E1C221F8b067343f9B760F5Cb2c4757FE2d",
+} as const;
+
+export const CHAIN_ID = 1 as const;
+export const NETWORK = "ethereum" as const;

@@ -119,3 +119,10 @@ export const TOKENS = {
     }
   }
 };
+
+// Helper function to get RPC URL by chain ID
+export function getChainRpc(chainId: number): string {
+  const networks = [ETHEREUM, BASE, OPTIMISM];
+  const network = networks.find(n => n.id === chainId);
+  return network?.rpcUrl || BASE.rpcUrl; // Default to Base
+}

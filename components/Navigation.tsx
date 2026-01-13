@@ -31,6 +31,7 @@ const Navigation: React.FC<NavigationProps> = ({
     { href: '/wallet', label: 'WALLET' },
     { href: '/faucet', label: 'FAUCET' },
     { href: '/sybil', label: 'IDENTITY' },
+    { href: '/swag', label: 'SWAG' },
   ];
 
   const isActive = (href: string) => router.pathname === href;

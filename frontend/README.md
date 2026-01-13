@@ -11,7 +11,6 @@ frontend/
 ├── contracts.ts           # TypeScript exports (multi-network)
 ├── abis/                  # Shared ABIs (same for all networks)
 │   ├── ZKPassportNFT.json
-│   ├── SponsorContract.json
 │   └── FaucetVault.json
 ├── base/                  # Base Mainnet specific files
 │   ├── contracts.json
@@ -76,9 +75,10 @@ function MyComponent({ chainId }: { chainId: number }) {
 
 ## Deployed Networks
 
+- **Ethereum Mainnet** (Chain ID: 1)
 - **Unichain Mainnet** (Chain ID: 130)
 - **Base Mainnet** (Chain ID: 8453)
 
 ## Default Network
 
-Default network: **Unichain Mainnet**
+Default network: **Ethereum Mainnet**
