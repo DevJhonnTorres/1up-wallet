@@ -2,7 +2,7 @@ import { PrivyProvider } from '@privy-io/react-auth';
 import Head from 'next/head';
 import type { AppProps } from 'next/app';
 import '../styles/globals.css';
-import { ThemeProvider } from '../context/ThemeContext';
+import { ThemeProvider } from '../contexts/ThemeContext';
 
 function MyApp({ Component, pageProps }: AppProps) {
   // App ID from the Privy Dashboard (using environment variable)
@@ -16,7 +16,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   // Define metadata constants
   const title = 'ETH CALI - Web3 Wallet';
   const description = 'A secure and easy-to-use Ethereum wallet to get into web3 easily. Fully open-sourced with gas fees sponsored by ETH CALI.';
-  const siteUrl = 'https://papayapp.vercel.app';
+  const siteUrl = 'https://wallet.ethcali.org';
   const imageUrl = `${siteUrl}/banner_ethcali.jpg`;
 
   return (
@@ -57,6 +57,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           embeddedWallets: {
             createOnLogin: 'users-without-wallets',
             showWalletUIs: true,
+            requireUserPasswordOnCreate: true, // Enable TEE execution for gas sponsorship
           },
         }}
       >

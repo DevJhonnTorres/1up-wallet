@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { useWallets } from '@privy-io/react-auth';
+import { useWallets, useSendTransaction } from '@privy-io/react-auth';
 import { encodeFunctionData } from 'viem';
 import {
   hasNFTByAddress,
@@ -9,7 +9,7 @@ import {
   getExplorerUrl,
   getNetworkName,
 } from '../../utils/contracts';
-import SponsorContractABI from '../../frontend/abis/SponsorContract.json';
+import ZKPassportNFTABI from '../../frontend/abis/ZKPassportNFT.json';
 
 // Dynamic imports for ZKPassport (client-side only)
 let requestPersonhoodVerification: any;
@@ -52,6 +52,7 @@ const maskIdentifier = (uid: string): string => {
 
 const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSuccess }) => {
   const { wallets } = useWallets();
+  const { sendTransaction } = useSendTransaction();
   const userWallet = wallets?.[0];
 
   const [isClient, setIsClient] = useState(false);
@@ -111,7 +112,7 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
     checkNFTOwnership();
   }, [chainId, userWallet?.address]);
 
-  // User clicks mint - gets signature from backend and submits transaction
+  // User clicks mint - direct mint with Privy sponsorship (no backend signature needed)
   const mintNFT = async () => {
     // Check what's missing and show specific error
     if (!userWallet) {
@@ -135,62 +136,38 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
         await userWallet.switchChain(chainId);
       }
 
-      // Step 2: Get signature from backend
-      console.log('Getting signature from backend...');
-      const response = await fetch('/api/mint-nft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userAddress: userWallet.address,
+      // Step 2: Get contract address for direct minting
+      const addresses = getContractAddresses(chainId);
+      const nftContractAddress = addresses.ZKPassportNFT;
+      
+      console.log('Minting directly to NFT contract:', nftContractAddress);
+
+      // Step 3: Prepare direct mint transaction data
+      const mintTxData = encodeFunctionData({
+        abi: ZKPassportNFTABI,
+        functionName: 'mint',
+        args: [
+          userWallet.address as `0x${string}`,
           uniqueIdentifier,
           faceMatchPassed,
-          personhoodVerified: true,
-          chainId,
-        }),
+          personhoodVerified || true
+        ],
       });
 
-      const data = await response.json();
-      console.log('Backend response:', data);
+      // Step 4: Send sponsored transaction directly to NFT contract
+      console.log('Sending sponsored transaction...');
+      const result = await sendTransaction(
+        {
+          to: nftContractAddress as `0x${string}`,
+          data: mintTxData,
+        },
+        {
+          sponsor: true, // Enable Privy's native gas sponsorship
+        } as any // Type assertion for compatibility
+      );
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to get mint signature from backend');
-      }
-
-      const mintData = data as MintData;
-
-      // Step 3: Get provider and prepare transaction
-      const provider = await userWallet.getEthereumProvider();
-      
-      // Prepare the mint request struct
-      const mintRequest = {
-        to: mintData.mintRequest.to as `0x${string}`,
-        uniqueIdentifier: mintData.mintRequest.uniqueIdentifier,
-        faceMatchPassed: mintData.mintRequest.faceMatchPassed,
-        personhoodVerified: mintData.mintRequest.personhoodVerified,
-        nonce: BigInt(mintData.mintRequest.nonce),
-        deadline: BigInt(mintData.mintRequest.deadline),
-      };
-
-      // Encode the function call using the actual ABI
-      const txData = encodeFunctionData({
-        abi: SponsorContractABI,
-        functionName: 'sponsorMint',
-        args: [mintRequest, mintData.signature as `0x${string}`],
-      });
-
-      // Step 4: Send transaction via user's wallet
-      console.log('Sending transaction...');
-      const txHash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: userWallet.address,
-          to: mintData.sponsorAddress,
-          data: txData,
-        }],
-      });
-
-      console.log('Transaction sent:', txHash);
-      setMintTxHash(txHash as string);
+      console.log('Sponsored transaction sent:', result.hash);
+      setMintTxHash(result.hash);
       setStatus('minted');
       setAlreadyHasNFT(true);
       onMintSuccess?.();

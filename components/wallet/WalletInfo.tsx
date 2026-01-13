@@ -3,7 +3,7 @@ import { Wallet, TokenBalance } from '../../types/index';
 import Button from '../../components/shared/Button';
 import Loading from '../../components/shared/Loading';
 import { getTokenLogoUrl, getNetworkLogoUrl, formatTokenBalance } from '../../utils/tokenUtils';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { usePrivy, useWallets, useSendTransaction } from '@privy-io/react-auth';
 import SendTokenModal from './SendTokenModal';
 import QRScanner from './QRScanner';
 import { parseUnits, encodeFunctionData } from 'viem';
@@ -24,6 +24,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
 }) => {
   const { exportWallet } = usePrivy();
   const { wallets } = useWallets();
+  const { sendTransaction } = useSendTransaction();
   const { getPriceForToken } = useTokenPrices();
   
   // States for send token modal
@@ -96,24 +97,22 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
       // Get the provider from the wallet
       const provider = await privyWallet.getEthereumProvider();
       
-      // Always use gas sponsorship with Biconomy paymaster when possible
+      // Always use Privy's native gas sponsorship 
       if (selectedToken === 'ETH') {
-        // Request the provider to send a transaction with gas sponsorship metadata
+        // Send ETH with Privy native sponsorship
         const value = parseUnits(amount, 18);
-        const valueHex = `0x${value.toString(16)}`;
         
-        const tx = await provider.request({
-          method: 'eth_sendTransaction',
-          params: [{
-            from: wallet.address,
-            to: recipient,
-            value: valueHex,
-            chainId: 10, // Optimism
-            gasMode: 'SPONSORED' // Signal to use Biconomy sponsorship when available
-          }]
-        });
+        const result = await sendTransaction(
+          {
+            to: recipient as `0x${string}`,
+            value,
+          },
+          {
+            sponsor: true, // Enable Privy's native gas sponsorship
+          } as any // Type assertion for compatibility
+        );
         
-        setTxHash(tx as string);
+        setTxHash(result.hash);
         
       } else if (selectedToken === 'USDC') {
         // USDC contract integration
@@ -142,19 +141,18 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           args: [recipient as `0x${string}`, usdcAmount]
         });
         
-        // Create the transaction
-        const tx = await provider.request({
-          method: 'eth_sendTransaction',
-          params: [{
-            from: wallet.address,
-            to: USDC_ADDRESS,
-            data: data,
-            chainId: 10, // Optimism
-            gasMode: 'SPONSORED' // Signal to use Biconomy sponsorship when available
-          }]
-        });
+        // Send USDC transfer with Privy native sponsorship
+        const result = await sendTransaction(
+          {
+            to: USDC_ADDRESS as `0x${string}`,
+            data,
+          },
+          {
+            sponsor: true, // Enable Privy's native gas sponsorship
+          } as any // Type assertion for compatibility
+        );
         
-        setTxHash(tx as string);
+        setTxHash(result.hash);
       }
       
       // Refresh balances after successful transaction

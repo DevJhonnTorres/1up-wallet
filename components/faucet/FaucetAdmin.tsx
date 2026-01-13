@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useWallets } from '@privy-io/react-auth';
 import {
   getFaucetBalance,
-  getSponsorBalance,
   isFaucetPaused,
   getClaimAmount,
   getFaucetNFTContract,
@@ -12,8 +11,6 @@ import {
   getUnpauseTxData,
   getUpdateClaimAmountTxData,
   getSetNFTContractTxData,
-  getSponsorDepositTxData,
-  getSponsorWithdrawTxData,
   getExplorerUrl,
   getAddressExplorerUrl,
   getContractAddresses,
@@ -36,7 +33,6 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
 
   // Contract state
   const [faucetBalance, setFaucetBalance] = useState('0');
-  const [sponsorBalance, setSponsorBalance] = useState('0');
   const [isPaused, setIsPaused] = useState(false);
   const [claimAmount, setClaimAmount] = useState('0');
   const [linkedNFTContract, setLinkedNFTContract] = useState('');
@@ -44,8 +40,6 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
   // Input state
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [sponsorDepositAmount, setSponsorDepositAmount] = useState('');
-  const [sponsorWithdrawAmount, setSponsorWithdrawAmount] = useState('');
   const [newClaimAmount, setNewClaimAmount] = useState('');
   const [newNFTContract, setNewNFTContract] = useState('');
 
@@ -60,16 +54,14 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
     setError(null);
 
     try {
-      const [fBalance, sBalance, paused, amount, nftContract] = await Promise.all([
+      const [fBalance, paused, amount, nftContract] = await Promise.all([
         getFaucetBalance(chainId),
-        getSponsorBalance(chainId),
         isFaucetPaused(chainId),
         getClaimAmount(chainId),
         getFaucetNFTContract(chainId),
       ]);
 
       setFaucetBalance(fBalance);
-      setSponsorBalance(sBalance);
       setIsPaused(paused);
       setClaimAmount(amount);
       setLinkedNFTContract(nftContract);
@@ -136,20 +128,6 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
     setWithdrawAmount('');
   };
 
-  const handleSponsorDeposit = () => {
-    if (!sponsorDepositAmount || parseFloat(sponsorDepositAmount) <= 0) return;
-    const txData = getSponsorDepositTxData(chainId, sponsorDepositAmount);
-    executeTransaction(txData);
-    setSponsorDepositAmount('');
-  };
-
-  const handleSponsorWithdraw = () => {
-    if (!sponsorWithdrawAmount || parseFloat(sponsorWithdrawAmount) <= 0) return;
-    const txData = getSponsorWithdrawTxData(chainId, sponsorWithdrawAmount);
-    executeTransaction(txData);
-    setSponsorWithdrawAmount('');
-  };
-
   const handlePauseToggle = () => {
     const txData = isPaused ? getUnpauseTxData(chainId) : getPauseTxData(chainId);
     executeTransaction(txData);
@@ -195,34 +173,25 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
         <span className="text-3xl">⚙️</span>
         <div>
           <h2 className="text-xl font-bold text-orange-400 font-mono">ADMIN_PANEL</h2>
-          <p className="text-gray-500 text-sm font-mono">Manage faucet and sponsor contracts</p>
+          <p className="text-gray-500 text-sm font-mono">Manage faucet contracts with Privy gas sponsorship</p>
         </div>
       </div>
 
-      {/* Contract Balances */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Faucet Vault */}
-        <div className="bg-gray-800/50 border border-cyan-500/20 rounded-lg p-4">
-          <p className="text-xs text-gray-500 font-mono mb-2">FAUCET_VAULT</p>
-          <p className="text-2xl font-bold text-cyan-400 font-mono">{parseFloat(faucetBalance).toFixed(6)} ETH</p>
-          <p className="text-xs text-gray-500 font-mono mt-1">
-            Claim amount: {claimAmount} ETH
-          </p>
-          <p className="text-xs text-gray-500 font-mono">
-            Status: <span className={isPaused ? 'text-red-400' : 'text-green-400'}>
-              {isPaused ? 'PAUSED' : 'ACTIVE'}
-            </span>
-          </p>
-        </div>
-
-        {/* Sponsor Contract */}
-        <div className="bg-gray-800/50 border border-purple-500/20 rounded-lg p-4">
-          <p className="text-xs text-gray-500 font-mono mb-2">SPONSOR_CONTRACT</p>
-          <p className="text-2xl font-bold text-purple-400 font-mono">{parseFloat(sponsorBalance).toFixed(6)} ETH</p>
-          <p className="text-xs text-gray-500 font-mono mt-1">
-            For gasless NFT minting
-          </p>
-        </div>
+      {/* Contract Balance */}
+      <div className="bg-gray-800/50 border border-cyan-500/20 rounded-lg p-4">
+        <p className="text-xs text-gray-500 font-mono mb-2">FAUCET_VAULT</p>
+        <p className="text-2xl font-bold text-cyan-400 font-mono">{parseFloat(faucetBalance).toFixed(6)} ETH</p>
+        <p className="text-xs text-gray-500 font-mono mt-1">
+          Claim amount: {claimAmount} ETH
+        </p>
+        <p className="text-xs text-gray-500 font-mono">
+          Status: <span className={isPaused ? 'text-red-400' : 'text-green-400'}>
+            {isPaused ? 'PAUSED' : 'ACTIVE'}
+          </span>
+        </p>
+        <p className="text-xs text-purple-400 font-mono mt-2">
+          💰 Gas fees sponsored by Privy
+        </p>
       </div>
 
       {/* Faucet Controls */}
@@ -361,51 +330,6 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
         </div>
       </details>
 
-      {/* Sponsor Controls */}
-      <div className="border border-purple-500/20 rounded-lg p-4 space-y-4">
-        <h3 className="text-sm font-bold text-purple-400 font-mono">SPONSOR_CONTROLS</h3>
-        
-        {/* Deposit */}
-        <div className="flex gap-2">
-          <input
-            type="number"
-            placeholder="Amount in ETH"
-            value={sponsorDepositAmount}
-            onChange={(e) => setSponsorDepositAmount(e.target.value)}
-            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white font-mono text-sm focus:border-purple-500 focus:outline-none"
-            step="0.001"
-            min="0"
-          />
-          <button
-            onClick={handleSponsorDeposit}
-            disabled={isProcessing || !sponsorDepositAmount}
-            className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 rounded-lg text-purple-400 font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            DEPOSIT
-          </button>
-        </div>
-
-        {/* Withdraw */}
-        <div className="flex gap-2">
-          <input
-            type="number"
-            placeholder="Amount in ETH"
-            value={sponsorWithdrawAmount}
-            onChange={(e) => setSponsorWithdrawAmount(e.target.value)}
-            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white font-mono text-sm focus:border-purple-500 focus:outline-none"
-            step="0.001"
-            min="0"
-          />
-          <button
-            onClick={handleSponsorWithdraw}
-            disabled={isProcessing || !sponsorWithdrawAmount}
-            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            WITHDRAW
-          </button>
-        </div>
-      </div>
-
       {/* Contract Addresses */}
       <div className="bg-gray-800/30 rounded-lg p-4 space-y-2">
         <p className="text-xs text-gray-500 font-mono">CONTRACT_ADDRESSES</p>
@@ -413,10 +337,10 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
           Faucet: {addresses.FaucetVault}
         </p>
         <p className="text-xs text-gray-400 font-mono break-all">
-          Sponsor: {addresses.SponsorContract}
-        </p>
-        <p className="text-xs text-gray-400 font-mono break-all">
           NFT: {addresses.ZKPassportNFT}
+        </p>
+        <p className="text-xs text-purple-400 font-mono">
+          💰 All transactions sponsored by Privy
         </p>
       </div>
 

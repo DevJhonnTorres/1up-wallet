@@ -86,9 +86,9 @@ export default function SybilPage() {
           {/* Technical Details */}
           <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 space-y-3">
             <h3 className="text-sm font-bold text-gray-400 font-mono">CONTRACTS</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+            <div className="grid grid-cols-1 gap-3 text-xs font-mono">
               <div>
-                <span className="text-gray-600">NFT:</span>
+                <span className="text-gray-600">ZKPassport NFT:</span>
                 <a 
                   href={getAddressExplorerUrl(currentChainId, addresses.ZKPassportNFT)}
                   target="_blank"
@@ -98,16 +98,8 @@ export default function SybilPage() {
                   {addresses.ZKPassportNFT.slice(0, 10)}...{addresses.ZKPassportNFT.slice(-6)}
                 </a>
               </div>
-              <div>
-                <span className="text-gray-600">Sponsor:</span>
-                <a 
-                  href={getAddressExplorerUrl(currentChainId, addresses.SponsorContract)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-purple-400 hover:underline ml-2 break-all"
-                >
-                  {addresses.SponsorContract.slice(0, 10)}...{addresses.SponsorContract.slice(-6)}
-                </a>
+              <div className="text-xs text-gray-600 font-mono mt-2">
+                💰 Gas fees sponsored by Privy • 🔒 Direct minting enabled
               </div>
             </div>
           </div>

@@ -55,7 +55,7 @@ export function getContractAddresses(chainId: number) {
 }
 
 // Get contract ABI (cast as any to avoid complex union type issues)
-export function getContractABI(contractName: 'ZKPassportNFT' | 'SponsorContract' | 'FaucetVault'): any {
+export function getContractABI(contractName: 'ZKPassportNFT' | 'FaucetVault'): any {
   // ABIs are the same across networks
   return CONTRACTS.networks.base.contracts[contractName].abi;
 }
@@ -190,24 +190,6 @@ export async function getFaucetNFTContract(chainId: number): Promise<string> {
 }
 
 // ============================================
-// SponsorContract Functions
-// ============================================
-
-export async function getSponsorBalance(chainId: number): Promise<string> {
-  const client = getPublicClient(chainId);
-  const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('SponsorContract');
-
-  try {
-    const result = await readContract(client, addresses.SponsorContract, abi, 'getBalance');
-    return formatEther(result as bigint);
-  } catch (error) {
-    console.error('Error getting sponsor balance:', error);
-    return '0';
-  }
-}
-
-// ============================================
 // Transaction Helpers (for use with wallet provider)
 // ============================================
 
@@ -279,26 +261,6 @@ export function getSetNFTContractTxData(chainId: number, newContractAddress: str
   return {
     to: addresses.FaucetVault as `0x${string}`,
     data: encodeFunctionData({ abi, functionName: 'setNFTContract', args: [newContractAddress] } as any),
-  };
-}
-
-// Sponsor contract deposit (for admin)
-export function getSponsorDepositTxData(chainId: number, amountEth: string) {
-  const addresses = getContractAddresses(chainId);
-
-  return {
-    to: addresses.SponsorContract as `0x${string}`,
-    value: parseEther(amountEth),
-  };
-}
-
-export function getSponsorWithdrawTxData(chainId: number, amountEth: string) {
-  const addresses = getContractAddresses(chainId);
-  const abi = getContractABI('SponsorContract');
-
-  return {
-    to: addresses.SponsorContract as `0x${string}`,
-    data: encodeFunctionData({ abi, functionName: 'withdraw', args: [parseEther(amountEth)] } as any),
   };
 }
 

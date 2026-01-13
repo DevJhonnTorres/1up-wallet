@@ -39,7 +39,7 @@ const htmlContent = `
   <div class="instructions">
     <h2>Instructions:</h2>
     <ol>
-      <li>Save the ETH Cali logo from the chat to <strong>papayapp/public/logo_eth_cali.png</strong></li>
+      <li>Save the ETH Cali logo to <strong>public/logo_eth_cali.png</strong></li>
       <li>Then run <code>npm run dev</code> to start the application</li>
     </ol>
   </div>

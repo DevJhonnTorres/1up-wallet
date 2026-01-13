@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import Link from 'next/link';
+import { useRouter } from 'next/router';
 import Layout from '../components/shared/Layout';
 import Loading from '../components/shared/Loading';
 import Navigation from '../components/Navigation';
@@ -8,9 +8,17 @@ import Navigation from '../components/Navigation';
 export default function Home() {
   const { login, ready, authenticated, user } = usePrivy();
   const { wallets } = useWallets();
+  const router = useRouter();
   const [currentChainId, setCurrentChainId] = useState(8453);
 
   const userWallet = wallets?.[0];
+
+  // Auto-redirect authenticated users to wallet
+  React.useEffect(() => {
+    if (ready && authenticated && userWallet) {
+      router.push('/wallet');
+    }
+  }, [ready, authenticated, userWallet, router]);
 
   // Loading timeout state
   const [loadingTimeout, setLoadingTimeout] = React.useState(false);
@@ -54,127 +62,209 @@ export default function Home() {
       )}
       
       {!authenticated ? (
-        // Login View
-        <div className="min-h-screen flex items-center justify-center px-4">
-          <div className="text-center max-w-sm w-full">
-            {/* Logo */}
-            <div className="mb-8">
+        // Professional Landing Page
+        <div className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900">
+          <div className="container mx-auto px-4 py-16">
+
+            
+            {/* Hero Section */}
+            <div className="text-center mb-16">
               <img 
-                src="/Logo ETHCALI Fondo Negro.png" 
-                alt="ETH CALI" 
-                className="h-20 mx-auto"
+                src="/logotethcali.png" 
+                alt="ETH CALIaaa" 
+                className="h-24 mx-auto mb-8"
               />
-            </div>
-
-            {/* Tagline */}
-            <p className="text-gray-500 font-mono text-xs mb-8">
-              Sybil-resistant wallet & faucet
-            </p>
-
-            {/* Features */}
-            <div className="grid grid-cols-3 gap-3 mb-8">
-              <div className="bg-gray-900/50 border border-cyan-500/20 rounded-lg p-3">
-                <span className="text-xl">💳</span>
-                <p className="text-[10px] text-gray-600 font-mono mt-1">WALLET</p>
-              </div>
-              <div className="bg-gray-900/50 border border-purple-500/20 rounded-lg p-3">
-                <span className="text-xl">🚰</span>
-                <p className="text-[10px] text-gray-600 font-mono mt-1">FAUCET</p>
-              </div>
-              <div className="bg-gray-900/50 border border-pink-500/20 rounded-lg p-3">
-                <span className="text-xl">🛡️</span>
-                <p className="text-[10px] text-gray-600 font-mono mt-1">SYBIL</p>
-              </div>
-            </div>
-
-            {/* Login Button */}
-            <button 
-              onClick={login}
-              className="w-full py-3 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 rounded-xl text-white font-mono font-bold transition-all"
-            >
-              CONNECT
-            </button>
-            <p className="text-[10px] text-gray-600 font-mono mt-3">
-              Email, passkey, or wallet
-            </p>
-          </div>
-        </div>
-      ) : (
-        // Dashboard
-        <Layout>
-          <div className="space-y-6">
-            {/* Welcome */}
-            <div className="text-center py-4">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent font-mono">
-                DASHBOARD
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-6">
+                ETH CALI WALLET
               </h1>
-              <p className="text-gray-600 font-mono text-xs mt-1">
-                {user?.email?.address || userWallet?.address?.slice(0, 10) + '...'}
+              <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-8">
+                Secure multi-chain wallet with gas sponsorship, sybil-resistant identity verification, 
+                and professional-grade infrastructure for the decentralized web.
               </p>
             </div>
 
-            {/* Module Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link href="/wallet" className="group">
-                <div className="bg-gray-900 border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl p-5 transition-all h-full">
-                  <div className="text-3xl mb-3">💳</div>
-                  <h2 className="text-lg font-bold text-cyan-400 font-mono mb-1">WALLET</h2>
-                  <p className="text-gray-600 text-xs font-mono mb-3">
-                    View balances, send tokens
-                  </p>
-                  <div className="text-cyan-400 font-mono text-xs group-hover:translate-x-1 transition-transform">
-                    OPEN →
-                  </div>
-                </div>
-              </Link>
-
-              <Link href="/faucet" className="group">
-                <div className="bg-gray-900 border border-purple-500/30 hover:border-purple-500/60 rounded-xl p-5 transition-all h-full">
-                  <div className="text-3xl mb-3">🚰</div>
-                  <h2 className="text-lg font-bold text-purple-400 font-mono mb-1">FAUCET</h2>
-                  <p className="text-gray-600 text-xs font-mono mb-3">
-                    Claim ETH for verified humans
-                  </p>
-                  <div className="text-purple-400 font-mono text-xs group-hover:translate-x-1 transition-transform">
-                    CLAIM →
-                  </div>
-                </div>
-              </Link>
-
-              <Link href="/sybil" className="group">
-                <div className="bg-gray-900 border border-pink-500/30 hover:border-pink-500/60 rounded-xl p-5 transition-all h-full">
-                  <div className="text-3xl mb-3">🛡️</div>
-                  <h2 className="text-lg font-bold text-pink-400 font-mono mb-1">SYBIL</h2>
-                  <p className="text-gray-600 text-xs font-mono mb-3">
-                    Get your ZKPassport NFT
-                  </p>
-                  <div className="text-pink-400 font-mono text-xs group-hover:translate-x-1 transition-transform">
-                    VERIFY →
-                  </div>
-                </div>
-              </Link>
+            {/* CTA at top */}
+            <div className="text-center mb-16">
+              <button 
+                onClick={login}
+                className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 rounded-xl text-white font-bold text-lg transition-all transform hover:scale-105 shadow-lg"
+              >
+                Access Wallet
+              </button>
+              <p className="text-gray-500 text-sm mt-4">
+                Connect with email, passkey, or external wallet
+              </p>
             </div>
 
-            {/* Quick Start */}
-            <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4">
-              <h3 className="text-xs font-bold text-gray-500 font-mono mb-3">QUICK_START</h3>
-              <div className="space-y-2 text-xs font-mono">
-                <div className="flex items-center gap-2">
-                  <span className="text-cyan-400">1.</span>
-                  <span className="text-gray-400">Verify with ZKPassport</span>
+            {/* Features Section */}
+            <div className="mb-20">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold text-white mb-4">Features</h2>
+                <p className="text-gray-400 max-w-2xl mx-auto">
+                  Powerful tools built for the modern Web3 experience
+                </p>
+              </div>
+              
+              {/* Core Features */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-gray-900/50 border border-cyan-500/20 rounded-xl p-6 text-center">
+                <div className="w-12 h-12 bg-cyan-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🔗</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-purple-400">2.</span>
-                  <span className="text-gray-400">Mint soulbound NFT</span>
+                <h3 className="text-lg font-bold text-cyan-400 mb-3">Multi-Chain</h3>
+                <p className="text-gray-500 text-sm">
+                  Seamlessly interact across Base, Ethereum, Optimism, and Unichain networks.
+                </p>
+              </div>
+
+              <div className="bg-gray-900/50 border border-blue-500/20 rounded-xl p-6 text-center">
+                <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">💸</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-pink-400">3.</span>
-                  <span className="text-gray-400">Claim faucet ETH</span>
+                <h3 className="text-lg font-bold text-blue-400 mb-3">Sponsorship</h3>
+                <p className="text-gray-500 text-sm">
+                  If it's your first time, don't be afraid. We sponsor your transactions.
+                </p>
+              </div>
+
+              <div className="bg-gray-900/50 border border-purple-500/20 rounded-xl p-6 text-center">
+                <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🛡️</span>
+                </div>
+                <h3 className="text-lg font-bold text-purple-400 mb-3">Sybil-Resistant</h3>
+                <p className="text-gray-500 text-sm">
+                  We want an app owned by humans that care about privacy.
+                </p>
+              </div>
+
+              <div className="bg-gray-900/50 border border-green-500/20 rounded-xl p-6 text-center">
+                <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">⛽</span>
+                </div>
+                <h3 className="text-lg font-bold text-green-400 mb-3">Faucet ETH</h3>
+                <p className="text-gray-500 text-sm">
+                  If you are a builder, you need gas for deployments. We gotchu.
+                </p>
+              </div>
+              </div>
+            </div>
+
+            {/* Infrastructure Section */}
+            <div className="mb-20">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold text-white mb-4">Infrastructure</h2>
+                <p className="text-gray-400 max-w-2xl mx-auto">
+                  Built on reliable and secure infrastructure partners
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-8 text-center">
+                  <div className="w-16 h-16 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <img src="infraused/privy.png" alt="Privy" className="w-10 h-10" />
+                  </div>
+                  <h3 className="text-xl font-bold text-blue-400 mb-3">Privy</h3>
+                  <p className="text-gray-500 text-sm">
+                    Secure authentication with email, passkeys, and external wallet integration.
+                  </p>
+                </div>
+
+                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-8 text-center">
+                  <div className="w-16 h-16 bg-purple-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <img src="infraused/zkpassportid.png" alt="ZK Passport" className="w-10 h-10" />
+                  </div>
+                  <h3 className="text-xl font-bold text-purple-400 mb-3">ZK Passport</h3>
+                  <p className="text-gray-500 text-sm">
+                    Sybil-resistant identity verification using zero-knowledge proofs.
+                  </p>
                 </div>
               </div>
             </div>
+
+            {/* Supported Networks Section */}
+            <div className="mb-20">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold text-white mb-4">Supported Networks</h2>
+                <p className="text-gray-400 max-w-2xl mx-auto mb-8">
+                  Connect across multiple blockchain networks
+                </p>
+              </div>
+              <div className="flex justify-center items-center space-x-12 flex-wrap gap-6">
+                <img src="/chains/base logo.svg" alt="Base" className="h-16" />
+                <img src="/chains/ethereum.png" alt="Ethereum" className="h-16" />
+                <img src="/chains/op mainnet.png" alt="Optimism" className="h-16" />
+                <img src="/chains/unichain.png" alt="Unichain" className="h-16" />
+              </div>
+            </div>
           </div>
-        </Layout>
+          
+          {/* Footer */}
+          <footer className="bg-gray-900 border-t border-gray-700">
+            <div className="container mx-auto px-4 py-12">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div className="col-span-1 md:col-span-1">
+                  <div className="mb-4">
+                    <img src="/logotethcali.png" alt="ETH CALI" className="h-16 mb-4" />
+                  </div>
+                  <p className="text-gray-400 text-sm mb-4">El Jardín Infinito del Pacífico Colombiano</p>
+                  <div className="flex space-x-4">
+                    <a href="https://twitter.com/ethcali_org" target="_blank" className="text-gray-400 hover:text-white text-xl">
+                      <i className="fab fa-twitter"></i>
+                    </a>
+                    <a href="https://www.linkedin.com/company/ethereum-cali/" target="_blank" className="text-gray-400 hover:text-white text-xl">
+                      <i className="fab fa-linkedin"></i>
+                    </a>
+                    <a href="https://instagram.com/ethereumcali.eth" target="_blank" className="text-gray-400 hover:text-white text-xl">
+                      <i className="fab fa-instagram"></i>
+                    </a>
+                    <a href="https://www.youtube.com/@ethereumcali" target="_blank" className="text-gray-400 hover:text-white text-xl">
+                      <i className="fab fa-youtube"></i>
+                    </a>
+                    <a href="https://github.com/ethcali" target="_blank" className="text-gray-400 hover:text-white text-xl">
+                      <i className="fab fa-github"></i>
+                    </a>
+                    <a href="https://t.me/ethcali" target="_blank" className="text-gray-400 hover:text-white text-xl">
+                      <i className="fab fa-telegram"></i>
+                    </a>
+                  </div>
+                </div>
+                
+                <div className="col-span-1">
+                  <h3 className="text-white font-bold mb-4">Community</h3>
+                  <ul className="space-y-2">
+                    <li><a href="https://discord.gg/GvkDmHnDuE" target="_blank" className="text-gray-400 hover:text-white text-sm">Discord</a></li>
+                    <li><a href="https://t.me/ethcali" target="_blank" className="text-gray-400 hover:text-white text-sm">Telegram</a></li>
+                    <li><a href="https://www.meetup.com/members/378305434/group/36837943/" target="_blank" className="text-gray-400 hover:text-white text-sm">Meetup</a></li>
+                    <li><a href="https://lu.ma/ethcali" target="_blank" className="text-gray-400 hover:text-white text-sm">Luma</a></li>
+                  </ul>
+                </div>
+                
+                <div className="col-span-1">
+                  <h3 className="text-white font-bold mb-4">Web3 Profiles</h3>
+                  <ul className="space-y-2">
+                    <li><a href="https://app.ens.domains/name/ethereumcali.eth/details" target="_blank" className="text-gray-400 hover:text-white text-sm">ENS</a></li>
+                    <li><a href="https://opensea.io/es/ETHCALI" target="_blank" className="text-gray-400 hover:text-white text-sm">OpenSea</a></li>
+                    <li><a href="https://zora.co/@ethcali" target="_blank" className="text-gray-400 hover:text-white text-sm">Zora</a></li>
+                    <li><a href="https://farcaster.xyz/ethereumcali" target="_blank" className="text-gray-400 hover:text-white text-sm">Farcaster</a></li>
+                    <li><a href="https://mirror.xyz/0x55C9fbf09c056ACac807CD674e34F1F8Df0E711d" target="_blank" className="text-gray-400 hover:text-white text-sm">Mirror</a></li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-700 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p className="text-gray-400 text-sm">&copy; 2023 Ethereum Cali. Todos los derechos reservados.</p>
+                <div className="mt-4 md:mt-0">
+                  <img src="/branding/Logo_Nodo_CLO_ETH_CO-01.png" alt="Ethereum Colombia Node" className="h-8" />
+                </div>
+              </div>
+            </div>
+          </footer>
+        </div>
+      ) : (
+        // Loading while redirecting to wallet
+        <div className="min-h-screen flex items-center justify-center">
+          <Loading fullScreen={true} text="Redirecting to wallet..." />
+        </div>
       )}
     </div>
   );

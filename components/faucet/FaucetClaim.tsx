@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useWallets } from '@privy-io/react-auth';
+import { useWallets, useSendTransaction } from '@privy-io/react-auth';
 import {
   hasNFTByAddress,
   hasClaimed,
@@ -21,6 +21,7 @@ interface FaucetClaimProps {
 
 const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) => {
   const { wallets } = useWallets();
+  const { sendTransaction } = useSendTransaction();
   const userWallet = wallets?.[0];
 
   const [isLoading, setIsLoading] = useState(true);
@@ -136,19 +137,20 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
         throw new Error('Failed to switch to the correct network');
       }
 
-      const provider = await userWallet.getEthereumProvider();
       const txData = getClaimTxData(chainId);
 
-      const tx = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: userWallet.address,
-          to: txData.to,
+      // Send sponsored transaction for faucet claim
+      const result = await sendTransaction(
+        {
+          to: txData.to as `0x${string}`,
           data: txData.data,
-        }],
-      });
+        },
+        {
+          sponsor: true, // Enable Privy's native gas sponsorship
+        } as any // Type assertion for compatibility
+      );
 
-      setTxHash(tx as string);
+      setTxHash(result.hash);
       
       // Refresh data after a delay
       setTimeout(() => {
