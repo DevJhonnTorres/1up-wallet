@@ -209,10 +209,10 @@ export default function Home() {
                     <a href="https://twitter.com/ethcali_org" target="_blank" className="text-gray-400 hover:text-white text-xl">
                       <i className="fab fa-twitter"></i>
                     </a>
-                    <a href="https://www.linkedin.com/company/ethereum-cali/" target="_blank" className="text-gray-400 hover:text-white text-xl">
+                    <a href="https://www.linkedin.com/company/eth-cali/" target="_blank" className="text-gray-400 hover:text-white text-xl">
                       <i className="fab fa-linkedin"></i>
                     </a>
-                    <a href="https://instagram.com/ethereumcali.eth" target="_blank" className="text-gray-400 hover:text-white text-xl">
+                    <a href="https://instagram.com/ethcali.eth" target="_blank" className="text-gray-400 hover:text-white text-xl">
                       <i className="fab fa-instagram"></i>
                     </a>
                     <a href="https://www.youtube.com/@ethereumcali" target="_blank" className="text-gray-400 hover:text-white text-xl">
