@@ -71,7 +71,7 @@ export default function Home() {
             <div className="text-center mb-16">
               <img 
                 src="/logotethcali.png" 
-                alt="ETH CALIaaa" 
+                alt="ETH CALI" 
                 className="h-24 mx-auto mb-8"
               />
               <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-6">
@@ -91,9 +91,6 @@ export default function Home() {
               >
                 Access Wallet
               </button>
-              <p className="text-gray-500 text-sm mt-4">
-                Connect with email, passkey, or external wallet
-              </p>
             </div>
 
             {/* Features Section */}
