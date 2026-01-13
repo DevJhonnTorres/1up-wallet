@@ -28,7 +28,6 @@ const Navigation: React.FC<NavigationProps> = ({
   const userWallet = wallets?.[0];
 
   const navItems = [
-    { href: '/', label: 'HOME' },
     { href: '/wallet', label: 'WALLET' },
     { href: '/faucet', label: 'FAUCET' },
     { href: '/sybil', label: 'IDENTITY' },
@@ -94,7 +93,7 @@ const Navigation: React.FC<NavigationProps> = ({
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <img 
-              src="/Logo ETHCALI Fondo Negro.png" 
+              src="/logotethcali.png" 
               alt="ETH CALI" 
               className="h-8 w-auto"
             />

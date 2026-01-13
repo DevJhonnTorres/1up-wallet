@@ -68,6 +68,7 @@ export default function WalletPage() {
                 balances={balances}
                 isLoading={isBalanceLoading}
                 onRefresh={refreshBalances}
+                chainId={currentChainId}
               />
               
               {/* Quick Access to Other Services */}

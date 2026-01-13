@@ -11,6 +11,7 @@ interface SendTokenModalProps {
   isSending: boolean;
   txHash?: string | null;
   initialRecipient?: string;
+  chainId?: number;
 }
 
 const SendTokenModal: React.FC<SendTokenModalProps> = ({
@@ -20,8 +21,23 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
   balance,
   isSending,
   txHash = null,
-  initialRecipient = ''
+  initialRecipient = '',
+  chainId,
 }) => {
+    const explorerBase = (() => {
+      switch (chainId) {
+        case 1:
+          return 'https://etherscan.io';
+        case 10:
+          return 'https://optimism.etherscan.io';
+        case 8453:
+          return 'https://basescan.org';
+        case 130:
+          return 'https://unichain.blockscout.com';
+        default:
+          return undefined;
+      }
+    })();
   const [recipient, setRecipient] = useState<string>(initialRecipient);
   const [amount, setAmount] = useState<string>('');
   const [error, setError] = useState<string>('');
@@ -151,14 +167,16 @@ const SendTokenModal: React.FC<SendTokenModalProps> = ({
             <div className="transaction-info">
               <p><strong>Transaction sent!</strong></p>
               <p className="tx-hash">{txHash}</p>
-              <a 
-                href={`https://optimistic.etherscan.io/tx/${txHash}`} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block-explorer-link"
-              >
-                View on Optimism Explorer
-              </a>
+              {explorerBase && (
+                <a 
+                  href={`${explorerBase}/tx/${txHash}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block-explorer-link"
+                >
+                  View on Explorer
+                </a>
+              )}
             </div>
           )}
         </div>

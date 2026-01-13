@@ -14,13 +14,15 @@ interface WalletInfoProps {
   balances: TokenBalance;
   isLoading: boolean;
   onRefresh: () => void;
+  chainId?: number;
 }
 
 const WalletInfo: React.FC<WalletInfoProps> = ({
   wallet,
   balances,
   isLoading,
-  onRefresh
+  onRefresh,
+  chainId,
 }) => {
   const { exportWallet } = usePrivy();
   const { wallets } = useWallets();
@@ -47,8 +49,21 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   const ethLogoUrl = getTokenLogoUrl('ETH');
   const usdcLogoUrl = getTokenLogoUrl('USDC');
   
-  // Get Optimism network logo
-  const optimismLogoUrl = getNetworkLogoUrl(10); // 10 is Optimism Mainnet chain ID
+  // Explorer mapping per chain
+  const explorerBase = (() => {
+    switch (chainId) {
+      case 1:
+        return 'https://etherscan.io';
+      case 10:
+        return 'https://optimism.etherscan.io';
+      case 8453:
+        return 'https://basescan.org';
+      case 130:
+        return 'https://unichain.blockscout.com';
+      default:
+        return undefined;
+    }
+  })();
   
   // Calculate USD values
   const ethPrice = getPriceForToken('ETH');
@@ -183,17 +198,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   
   return (
     <div className="wallet-info">
-      <div className="network-indicator">
-        <div className="network-badge">
-          <img 
-            src={optimismLogoUrl}
-            alt="Optimism Logo" 
-            className="network-icon"
-          />
-          <span>Optimism Network</span>
-        </div>
-      </div>
-      
       <h3>Your Wallet</h3>
       
       <div className="wallet-address-container">
@@ -212,7 +216,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
               variant="outline"
               className="export-button"
             >
-              <span className="export-icon">🔑</span>
               Export Wallet
             </Button>
           </div>
@@ -224,19 +227,20 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
                 className="copy-button"
                 onClick={() => {
                   navigator.clipboard.writeText(wallet.address);
-                  // Show copy success message (you could add a state for this)
                 }}
               >
-                📋 Copy
+                Copy
               </button>
-              <a 
-                href={`https://optimistic.etherscan.io/address/${wallet.address}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="view-button"
-              >
-                🔍 View
-              </a>
+              {explorerBase && (
+                <a 
+                  href={`${explorerBase}/address/${wallet.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="view-button"
+                >
+                  View on Explorer
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -253,7 +257,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
               className="refresh-button"
               disabled={isLoading}
             >
-              🔄 Refresh
+              Refresh
             </Button>
             <Button
               onClick={openQRScanner}
@@ -261,7 +265,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
               variant="outline"
               className="scan-button"
             >
-              📷 Scan Wallet
+              Scan Wallet
             </Button>
           </div>
         </div>
@@ -332,16 +336,18 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             <div className="tx-hash-container">
               <span className="tx-label">Transaction Hash:</span>
               <code className="tx-hash">{txHash.substring(0, 10)}...{txHash.substring(txHash.length - 8)}</code>
-              <a 
-                href={`https://optimistic.etherscan.io/tx/${txHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="explorer-button"
-              >
-                View on Explorer
-              </a>
+              {explorerBase && (
+                <a 
+                  href={`${explorerBase}/tx/${txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="explorer-button"
+                >
+                  View on Explorer
+                </a>
+              )}
             </div>
-            <p className="receipt-info">Your transaction has been submitted to the network. It may take a few moments to be confirmed.</p>
+            <p className="receipt-info">Your transaction has been submitted. It may take a few moments to be confirmed.</p>
           </div>
         </div>
       )}
@@ -364,6 +370,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           isSending={isSendingTx}
           txHash={txHash}
           initialRecipient={scannedAddress || ''}
+          chainId={chainId}
         />
       )}
       
@@ -376,29 +383,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           position: relative;
         }
         
-        .network-indicator {
-          display: flex;
-          justify-content: flex-end;
-          margin-bottom: 1rem;
-        }
-        
-        .network-badge {
-          display: flex;
-          align-items: center;
-          background: #ff0b521a;
-          color: #ff0b51;
-          padding: 0.5rem 0.8rem;
-          border-radius: 20px;
-          font-size: 0.85rem;
-          font-weight: 500;
-        }
-        
-        .network-icon {
-          width: 18px;
-          height: 18px;
-          margin-right: 0.5rem;
-          border-radius: 50%;
-        }
+        /* removed network indicator styles */
         
         h3 {
           margin: 0 0 1rem 0;
