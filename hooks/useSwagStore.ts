@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useSendTransaction, usePrivy } from '@privy-io/react-auth';
+import { useSendTransaction, usePrivy, useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, encodeFunctionData } from 'viem';
 import ERC20ABI from '../frontend/abis/ERC20.json';
 import Swag1155ABI from '../frontend/abis/Swag1155.json';
@@ -8,6 +8,7 @@ import { getIPFSGatewayUrl } from '../lib/pinata';
 import { baseUnitsToPrice } from '../utils/tokenGeneration';
 import { useSwagAddresses } from '../utils/network';
 import { getChainRpc } from '../config/networks';
+import { getChainConfig } from '../utils/network';
 
 export function useActiveTokenIds() {
   const { swag1155, chainId } = useSwagAddresses();
@@ -31,7 +32,8 @@ export function useActiveTokenIds() {
       return tokenIds as bigint[];
     },
     enabled: Boolean(swag1155 && chainId),
-    staleTime: 1000 * 60 * 5, // 5 min cache
+    staleTime: 0,
+    gcTime: 1000 * 60 * 5,
   });
 
   return {
@@ -44,9 +46,10 @@ export function useActiveTokenIds() {
 
 export function useVariantState(tokenId: bigint) {
   const { swag1155, chainId } = useSwagAddresses();
+  const tokenIdStr = tokenId.toString();
 
   const query = useQuery({
-    queryKey: ['swag-variant-state', swag1155, chainId, tokenId.toString()],
+    queryKey: ['swag-variant-state', swag1155, chainId, tokenIdStr],
     queryFn: async () => {
       if (!swag1155 || !chainId) throw new Error('Missing contract address or chain ID');
 
@@ -66,7 +69,8 @@ export function useVariantState(tokenId: bigint) {
       return { price, maxSupply, minted, active };
     },
     enabled: Boolean(swag1155 && chainId),
-    staleTime: 1000 * 60, // 1 min cache
+    staleTime: 0, // Always refetch on chain change
+    gcTime: 1000 * 60 * 5,
   });
 
   const data = query.data || { price: 0n, maxSupply: 0n, minted: 0n, active: false };
@@ -84,9 +88,10 @@ export function useVariantState(tokenId: bigint) {
 
 export function useVariantMetadata(tokenId: bigint) {
   const { swag1155, chainId } = useSwagAddresses();
+  const tokenIdStr = tokenId.toString();
 
   const uriQuery = useQuery({
-    queryKey: ['swag-variant-uri', swag1155, chainId, tokenId.toString()],
+    queryKey: ['swag-variant-uri', swag1155, chainId, tokenIdStr],
     queryFn: async () => {
       if (!swag1155 || !chainId) throw new Error('Missing contract address or chain ID');
 
@@ -105,23 +110,26 @@ export function useVariantMetadata(tokenId: bigint) {
       return uri as unknown as string;
     },
     enabled: Boolean(swag1155 && chainId),
-    staleTime: 1000 * 60 * 5, // 5 min cache
+    staleTime: 0,
+    gcTime: 1000 * 60 * 5,
   });
 
   const gatewayUrl = uriQuery.data ? getIPFSGatewayUrl(uriQuery.data) : '';
 
   const metadataQuery = useQuery({
-    queryKey: ['swag-metadata', tokenId, gatewayUrl],
+    queryKey: ['swag-metadata', chainId, tokenIdStr, gatewayUrl],
     queryFn: async () => {
       if (!gatewayUrl) return null;
       const response = await fetch(gatewayUrl);
       if (!response.ok) {
-        throw new Error('Failed to fetch metadata');
+        throw new Error(`Failed to fetch metadata: ${response.status}`);
       }
       return response.json();
     },
     enabled: Boolean(gatewayUrl),
-    staleTime: 1000 * 60 * 30, // 30 min cache
+    staleTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 60,
+    retry: 2,
   });
 
   return {
@@ -133,35 +141,95 @@ export function useVariantMetadata(tokenId: bigint) {
 }
 
 export function useBuyVariant() {
-  const { swag1155, usdc, chainId } = useSwagAddresses();
   const { user } = usePrivy();
+  const { wallets } = useWallets();
   const { sendTransaction } = useSendTransaction();
 
+  const activeWallet = wallets?.[0];
+  const isEmbedded = activeWallet?.walletClientType === 'privy';
+
+  // Helper to get chainId from wallet
+  const getWalletChainId = (): number => {
+    if (!activeWallet?.chainId) return 8453; // fallback to Base
+    if (typeof activeWallet.chainId === 'string') {
+      const parts = activeWallet.chainId.split(':');
+      return parseInt(parts[parts.length - 1], 10);
+    }
+    return activeWallet.chainId;
+  };
+
   const buy = async (tokenId: bigint, quantity: number, price: number) => {
-    if (!user) {
+    if (!user || !activeWallet) {
       throw new Error('Connect your wallet to continue');
     }
-    if (!swag1155 || !usdc || !chainId) {
-      throw new Error('Missing contract addresses for the selected network');
+
+    // Get fresh chainId from wallet at transaction time
+    const walletChainId = getWalletChainId();
+    const config = getChainConfig(walletChainId);
+    const { swag1155, usdc } = config;
+    const chainId = config.id;
+
+    if (!swag1155 || !usdc) {
+      throw new Error(`Missing contract addresses for chain ${chainId}. Please ensure SWAG1155 is deployed on this network.`);
     }
 
     const totalPrice = BigInt(Math.round(price * quantity * 1_000_000));
 
-    // Approve USDC spend
-    const approveData = encodeFunctionData({
-      abi: ERC20ABI as any,
-      functionName: 'approve',
-      args: [swag1155 as `0x${string}`, totalPrice],
+    // Create public client with correct chain RPC
+    const rpcUrl = getChainRpc(chainId);
+    const publicClient = createPublicClient({
+      transport: http(rpcUrl),
     });
 
-    await sendTransaction({
-      to: usdc,
-      data: approveData,
-    }, {
-      sponsor: true,
-    } as any);
+    // Step 1: Check current allowance first
+    const currentAllowance = await publicClient.readContract({
+      address: usdc as `0x${string}`,
+      abi: ERC20ABI as any,
+      functionName: 'allowance',
+      args: [activeWallet.address as `0x${string}`, swag1155 as `0x${string}`],
+    }) as unknown as bigint;
 
-    // Buy tokens
+    // Only approve if current allowance is less than needed
+    if (currentAllowance < totalPrice) {
+      const approveData = encodeFunctionData({
+        abi: ERC20ABI as any,
+        functionName: 'approve',
+        args: [swag1155 as `0x${string}`, totalPrice],
+      });
+
+      const approveResult = await sendTransaction({
+        to: usdc as `0x${string}`,
+        data: approveData,
+        chainId,
+      }, {
+        address: activeWallet.address,
+        sponsor: isEmbedded,
+      } as any);
+
+      // Wait for approval transaction to be confirmed before proceeding
+      if (approveResult?.hash) {
+        await publicClient.waitForTransactionReceipt({
+          hash: approveResult.hash as `0x${string}`,
+          confirmations: 1,
+        });
+      } else {
+        // If no hash returned, wait a bit and verify allowance was set
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        const newAllowance = await publicClient.readContract({
+          address: usdc as `0x${string}`,
+          abi: ERC20ABI as any,
+          functionName: 'allowance',
+          args: [activeWallet.address as `0x${string}`, swag1155 as `0x${string}`],
+        }) as unknown as bigint;
+
+        if (newAllowance < totalPrice) {
+          throw new Error('Approval failed - please try again');
+        }
+      }
+    }
+
+    // Step 2: Buy tokens (only after approval is confirmed)
     const buyData = encodeFunctionData({
       abi: Swag1155ABI as any,
       functionName: 'buy',
@@ -169,15 +237,21 @@ export function useBuyVariant() {
     });
 
     return sendTransaction({
-      to: swag1155,
+      to: swag1155 as `0x${string}`,
       data: buyData,
+      chainId,
     }, {
-      sponsor: true,
+      address: activeWallet.address,
+      sponsor: isEmbedded,
     } as any);
   };
 
+  // Check if buy is possible based on wallet connection
+  const walletChainId = getWalletChainId();
+  const currentConfig = getChainConfig(walletChainId);
+
   return {
     buy,
-    canBuy: Boolean(user && swag1155 && usdc && chainId),
+    canBuy: Boolean(user && activeWallet && currentConfig.swag1155 && currentConfig.usdc),
   };
 }

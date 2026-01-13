@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
+
+const ADMIN_ADDRESS = '0x1fd2A56907B1db9B29c2D8F0037b6D4E104f5711'.toLowerCase();
 
 const SUPPORTED_CHAINS = [
   { id: 8453, name: 'Base', logo: '/chains/base logo.svg' },
@@ -24,18 +26,28 @@ const Navigation: React.FC<NavigationProps> = ({
   const router = useRouter();
   const { authenticated, logout, user } = usePrivy();
   const { wallets } = useWallets();
+  const [displayChainId, setDisplayChainId] = useState(currentChainId);
+
+  // Sync displayChainId with prop
+  useEffect(() => {
+    setDisplayChainId(currentChainId);
+  }, [currentChainId]);
 
   const userWallet = wallets?.[0];
+  
+  // Check if user is admin
+  const isAdmin = wallets.some(w => w.address?.toLowerCase() === ADMIN_ADDRESS);
 
   const navItems = [
     { href: '/wallet', label: 'WALLET' },
     { href: '/faucet', label: 'FAUCET' },
     { href: '/sybil', label: 'IDENTITY' },
     { href: '/swag', label: 'SWAG' },
+    ...(isAdmin ? [{ href: '/swag/admin', label: 'ADMIN' }] : []),
   ];
 
-  const isActive = (href: string) => router.pathname === href;
-  const currentChain = SUPPORTED_CHAINS.find(c => c.id === currentChainId) || SUPPORTED_CHAINS[0];
+  const isActive = (href: string) => router.pathname === href || router.pathname.startsWith(href + '/');
+  const currentChain = SUPPORTED_CHAINS.find(c => c.id === displayChainId) || SUPPORTED_CHAINS[0];
 
   // Switch wallet chain
   const handleChainSwitch = async (chainId: number) => {
@@ -50,6 +62,7 @@ const Navigation: React.FC<NavigationProps> = ({
         params: [{ chainId: chainHex }],
       });
       
+      setDisplayChainId(chainId);
       onChainChange?.(chainId);
     } catch (error: any) {
       // If chain doesn't exist, add it
@@ -75,6 +88,7 @@ const Navigation: React.FC<NavigationProps> = ({
             params: [chainConfig],
           });
           
+          setDisplayChainId(chainId);
           onChainChange?.(chainId);
         } catch (addError) {
           console.error('Error adding chain:', addError);
@@ -124,7 +138,9 @@ const Navigation: React.FC<NavigationProps> = ({
             {/* Chain Switcher Dropdown */}
             <div className="relative group">
               <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-900 border border-gray-700 rounded-lg text-xs font-mono text-gray-300 hover:border-cyan-500/50 transition-all">
-                <img src={currentChain.logo} alt={currentChain.name} className="w-4 h-4 rounded-full" />
+                <div className="w-5 h-5 flex items-center justify-center">
+                  <img src={currentChain.logo} alt={currentChain.name} className="w-5 h-5 rounded-full object-contain" />
+                </div>
                 <span className="hidden sm:inline">{currentChain.name}</span>
                 <span className="text-gray-500">▼</span>
               </button>
@@ -134,12 +150,14 @@ const Navigation: React.FC<NavigationProps> = ({
                     key={chain.id}
                     onClick={() => handleChainSwitch(chain.id)}
                     className={`w-full px-3 py-2 text-left text-xs font-mono flex items-center gap-2 hover:bg-gray-800 transition-all first:rounded-t-lg last:rounded-b-lg ${
-                      currentChainId === chain.id ? 'text-cyan-400 bg-cyan-500/10' : 'text-gray-300'
+                      displayChainId === chain.id ? 'text-cyan-400 bg-cyan-500/10' : 'text-gray-300'
                     }`}
                   >
-                    <img src={chain.logo} alt={chain.name} className="w-4 h-4 rounded-full" />
+                    <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                      <img src={chain.logo} alt={chain.name} className="w-5 h-5 rounded-full object-contain" />
+                    </div>
                     <span>{chain.name}</span>
-                    {currentChainId === chain.id && <span className="ml-auto">✓</span>}
+                    {displayChainId === chain.id && <span className="ml-auto">✓</span>}
                   </button>
                 ))}
               </div>

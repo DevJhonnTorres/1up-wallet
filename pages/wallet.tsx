@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/router';
 import Layout from '../components/shared/Layout';
 import Loading from '../components/shared/Loading';
@@ -8,11 +8,12 @@ import WalletInfo from '../components/wallet/WalletInfo';
 import Navigation from '../components/Navigation';
 import { Wallet } from '../types/index';
 import { useTokenBalances } from '../hooks/useTokenBalances';
+import { useActiveWallet } from '../hooks/useActiveWallet';
 
 export default function WalletPage() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
-  const { wallets } = useWallets();
+  const { wallet: activeWallet, isEmbeddedWallet, isExternalWallet, canUseSponsoredGas } = useActiveWallet();
   const [currentChainId, setCurrentChainId] = useState(8453); // Default to Base
 
   // Redirect to home if not authenticated
@@ -22,8 +23,8 @@ export default function WalletPage() {
     }
   }, [ready, authenticated, router]);
 
-  // Get embedded wallet from Privy
-  const userWallet = wallets?.[0];
+  // Use the active wallet (prioritizes external over embedded)
+  const userWallet = activeWallet;
   
   // Use our custom hook to fetch real balances from selected network
   const { 

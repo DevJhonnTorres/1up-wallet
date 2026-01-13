@@ -13,16 +13,19 @@ export function ProductCard({ tokenId }: ProductCardProps) {
   const { buy, canBuy } = useBuyVariant();
   const [quantity, setQuantity] = useState(1);
   const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const isLoading = isStateLoading || isMetadataLoading;
 
   const handleBuy = async () => {
     if (!metadata || !active || !canBuy) return;
     setPending(true);
+    setError(null);
     try {
       await buy(tokenId, quantity, price);
-    } catch (error) {
-      console.error(error);
+    } catch (err: any) {
+      console.error('Buy error:', err);
+      setError(err?.message || 'Transaction failed');
     } finally {
       setPending(false);
     }
@@ -93,9 +96,12 @@ export function ProductCard({ tokenId }: ProductCardProps) {
           disabled={!active || pending || !canBuy || available === 0}
           className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 p-3 text-center text-base font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {pending ? 'Processing...' : 'Buy now'}
+          {pending ? 'Processing...' : !canBuy ? 'Connect Wallet' : 'Buy now'}
         </button>
       </div>
+      {error && (
+        <p className="text-sm text-red-400 mt-2">{error}</p>
+      )}
     </article>
   );
 }

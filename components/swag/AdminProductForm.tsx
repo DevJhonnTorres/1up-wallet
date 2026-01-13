@@ -1,5 +1,5 @@
 import { usePrivy } from '@privy-io/react-auth';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useProductCreation } from '../../hooks/useProductCreation';
 import { GenderOption, ProductFormData, SizeOption } from '../../types/swag';
 
@@ -9,6 +9,10 @@ const GENDERS: GenderOption[] = ['Male', 'Female', 'Unisex'];
 export function AdminProductForm() {
   const { user } = usePrivy();
   const { createProduct, isLoading, progress, currentStep, error } = useProductCreation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [form, setForm] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -20,6 +24,64 @@ export function AdminProductForm() {
   });
 
   const supplyPerSize = form.sizes.length ? Math.floor(form.totalSupply / form.sizes.length) : 0;
+
+  // Handle image file selection and upload to IPFS
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Image must be less than 5MB');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+
+      // Convert to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+
+      // Upload to IPFS
+      const response = await fetch('/api/pinata/pin-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file: base64, fileName: file.name }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      const { uri, gateway } = await response.json();
+      setForm({ ...form, imageUri: uri });
+      setImagePreview(gateway); // Use gateway URL for preview
+    } catch (err) {
+      console.error('Upload error:', err);
+      setUploadError(err instanceof Error ? err.message : 'Failed to upload image');
+      setImagePreview(null);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSizeToggle = (size: SizeOption) => {
     setForm((prev) => ({
@@ -89,18 +151,69 @@ export function AdminProductForm() {
             disabled={isLoading}
           />
         </label>
-        <label className="space-y-2">
-          <span className="text-sm text-slate-400">Image URI (ipfs:// or https://)</span>
+        
+        {/* Image Upload Section */}
+        <div className="space-y-2">
+          <span className="text-sm text-slate-400">Product Image</span>
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+              disabled={isLoading || isUploading}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading || isUploading}
+              className="flex-1 rounded-lg border border-dashed border-slate-600 bg-slate-900/80 p-3 text-slate-400 hover:border-cyan-400 hover:text-cyan-400 transition disabled:opacity-50"
+            >
+              {isUploading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Uploading to IPFS...
+                </span>
+              ) : imagePreview ? (
+                'Change Image'
+              ) : (
+                '📷 Upload Image'
+              )}
+            </button>
+          </div>
+          
+          {/* Image Preview */}
+          {imagePreview && (
+            <div className="mt-2 relative">
+              <img 
+                src={imagePreview} 
+                alt="Preview" 
+                className="w-full h-32 object-cover rounded-lg border border-slate-700"
+              />
+              <div className="absolute bottom-2 left-2 right-2 bg-black/70 rounded px-2 py-1">
+                <p className="text-xs text-cyan-400 truncate font-mono">{form.imageUri}</p>
+              </div>
+            </div>
+          )}
+          
+          {uploadError && (
+            <p className="text-xs text-red-400">{uploadError}</p>
+          )}
+          
+          {/* Manual URI input as fallback */}
           <input
-            type="url"
-            required
+            type="text"
             value={form.imageUri}
             onChange={(e) => setForm({ ...form, imageUri: e.target.value })}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900/80 p-3 text-white focus:border-cyan-400 focus:outline-none"
-            placeholder="ipfs://..."
+            className="w-full rounded-lg border border-slate-700 bg-slate-900/80 p-2 text-sm text-slate-400 focus:border-cyan-400 focus:outline-none"
+            placeholder="Or paste ipfs://... or https://..."
             disabled={isLoading}
           />
-        </label>
+        </div>
       </div>
 
       <label className="space-y-2">

@@ -4,7 +4,7 @@ export const CONTRACTS = {
   "chainId": 130,
   "contracts": {
     "ZKPassportNFT": {
-      "address": "0x01401f4802bcD0e1Ee4fA7E42a1b7f48Ab82d121",
+      "address": "0xD9663db045850171850fd1298A2176B329A67928",
       "abi": [
         {
           "inputs": [
@@ -804,7 +804,7 @@ export const CONTRACTS = {
       ]
     },
     "FaucetVault": {
-      "address": "0x016d7D55708f7b7b39693e2b46D69F290537420B",
+      "address": "0x94B9f649f8825d5d797E37d04DFC66d612750b10",
       "abi": [
         {
           "inputs": [
@@ -1177,7 +1177,7 @@ export const CONTRACTS = {
       ]
     },
     "Swag1155": {
-      "address": "0x46Fb79966210f4d2C3c1Fb1a5c05330B401FDf5C",
+      "address": "0x2940e286B41d279b61E484B98a08498E355E4778",
       "abi": [
         {
           "inputs": [
@@ -1199,6 +1199,27 @@ export const CONTRACTS = {
           ],
           "stateMutability": "nonpayable",
           "type": "constructor"
+        },
+        {
+          "inputs": [],
+          "name": "AccessControlBadConfirmation",
+          "type": "error"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "neededRole",
+              "type": "bytes32"
+            }
+          ],
+          "name": "AccessControlUnauthorizedAccount",
+          "type": "error"
         },
         {
           "inputs": [
@@ -1303,31 +1324,35 @@ export const CONTRACTS = {
           "type": "error"
         },
         {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "owner",
-              "type": "address"
-            }
-          ],
-          "name": "OwnableInvalidOwner",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "account",
-              "type": "address"
-            }
-          ],
-          "name": "OwnableUnauthorizedAccount",
-          "type": "error"
-        },
-        {
           "inputs": [],
           "name": "ReentrancyGuardReentrantCall",
           "type": "error"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "admin",
+              "type": "address"
+            }
+          ],
+          "name": "AdminAdded",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "admin",
+              "type": "address"
+            }
+          ],
+          "name": "AdminRemoved",
+          "type": "event"
         },
         {
           "anonymous": false,
@@ -1352,25 +1377,6 @@ export const CONTRACTS = {
             }
           ],
           "name": "ApprovalForAll",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "previousOwner",
-              "type": "address"
-            },
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "OwnershipTransferred",
           "type": "event"
         },
         {
@@ -1439,6 +1445,81 @@ export const CONTRACTS = {
             }
           ],
           "name": "PurchasedBatch",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "bytes32",
+              "name": "role",
+              "type": "bytes32"
+            },
+            {
+              "indexed": true,
+              "internalType": "bytes32",
+              "name": "previousAdminRole",
+              "type": "bytes32"
+            },
+            {
+              "indexed": true,
+              "internalType": "bytes32",
+              "name": "newAdminRole",
+              "type": "bytes32"
+            }
+          ],
+          "name": "RoleAdminChanged",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "bytes32",
+              "name": "role",
+              "type": "bytes32"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "sender",
+              "type": "address"
+            }
+          ],
+          "name": "RoleGranted",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "bytes32",
+              "name": "role",
+              "type": "bytes32"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "sender",
+              "type": "address"
+            }
+          ],
+          "name": "RoleRevoked",
           "type": "event"
         },
         {
@@ -1611,6 +1692,45 @@ export const CONTRACTS = {
           "type": "event"
         },
         {
+          "inputs": [],
+          "name": "ADMIN_ROLE",
+          "outputs": [
+            {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "DEFAULT_ADMIN_ROLE",
+          "outputs": [
+            {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "admin",
+              "type": "address"
+            }
+          ],
+          "name": "addAdmin",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
           "inputs": [
             {
               "internalType": "address",
@@ -1697,6 +1817,25 @@ export const CONTRACTS = {
         {
           "inputs": [
             {
+              "internalType": "bytes32",
+              "name": "role",
+              "type": "bytes32"
+            }
+          ],
+          "name": "getRoleAdmin",
+          "outputs": [
+            {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
               "internalType": "uint256",
               "name": "tokenId",
               "type": "uint256"
@@ -1738,6 +1877,67 @@ export const CONTRACTS = {
         {
           "inputs": [
             {
+              "internalType": "bytes32",
+              "name": "role",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "grantRole",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes32",
+              "name": "role",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "hasRole",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "isAdmin",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
               "internalType": "address",
               "name": "account",
               "type": "address"
@@ -1760,13 +1960,19 @@ export const CONTRACTS = {
           "type": "function"
         },
         {
-          "inputs": [],
-          "name": "listTokenIds",
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "isSuperAdmin",
           "outputs": [
             {
-              "internalType": "uint256[]",
+              "internalType": "bool",
               "name": "",
-              "type": "uint256[]"
+              "type": "bool"
             }
           ],
           "stateMutability": "view",
@@ -1774,12 +1980,12 @@ export const CONTRACTS = {
         },
         {
           "inputs": [],
-          "name": "owner",
+          "name": "listTokenIds",
           "outputs": [
             {
-              "internalType": "address",
+              "internalType": "uint256[]",
               "name": "",
-              "type": "address"
+              "type": "uint256[]"
             }
           ],
           "stateMutability": "view",
@@ -1805,8 +2011,50 @@ export const CONTRACTS = {
           "type": "function"
         },
         {
-          "inputs": [],
-          "name": "renounceOwnership",
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "admin",
+              "type": "address"
+            }
+          ],
+          "name": "removeAdmin",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes32",
+              "name": "role",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "callerConfirmation",
+              "type": "address"
+            }
+          ],
+          "name": "renounceRole",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "bytes32",
+              "name": "role",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            }
+          ],
+          "name": "revokeRole",
           "outputs": [],
           "stateMutability": "nonpayable",
           "type": "function"
@@ -2015,19 +2263,6 @@ export const CONTRACTS = {
           "type": "function"
         },
         {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "newOwner",
-              "type": "address"
-            }
-          ],
-          "name": "transferOwnership",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
           "inputs": [],
           "name": "treasury",
           "outputs": [
@@ -2112,8 +2347,8 @@ export const CONTRACTS = {
 } as const;
 
 export const ADDRESSES = {
-  ZKPassportNFT: "0x01401f4802bcD0e1Ee4fA7E42a1b7f48Ab82d121",
-  FaucetVault: "0x016d7D55708f7b7b39693e2b46D69F290537420B",
+  ZKPassportNFT: "0xD9663db045850171850fd1298A2176B329A67928",
+  FaucetVault: "0x94B9f649f8825d5d797E37d04DFC66d612750b10",
 } as const;
 
 export const CHAIN_ID = 130 as const;

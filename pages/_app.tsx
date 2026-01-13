@@ -57,11 +57,14 @@ function MyApp({ Component, pageProps }: AppProps) {
             theme: 'light',
             accentColor: '#4B66F3',
             logo: '/logo_eth_cali.png',
+            walletChainType: 'ethereum-only',
+            walletList: ['detected_wallets', 'metamask', 'coinbase_wallet', 'rainbow', 'wallet_connect'],
           },
           embeddedWallets: {
-            createOnLogin: 'users-without-wallets',
+            ethereum: {
+              createOnLogin: 'users-without-wallets',
+            },
             showWalletUIs: true,
-            requireUserPasswordOnCreate: true, // Enable TEE execution for gas sponsorship
           },
         }}
       >

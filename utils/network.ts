@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 
 type ChainLabel = 'base' | 'ethereum' | 'unichain';
@@ -66,10 +66,31 @@ export function getExplorerUrl(chainId?: number): string {
 
 export function useSwagAddresses() {
   const { wallets } = useWallets();
-  const embeddedWallet = wallets.find(w => w.walletClientType === 'privy');
-  const chainIdRaw = embeddedWallet?.chainId || FALLBACK_CHAIN_ID;
-  const chainId = typeof chainIdRaw === 'string' ? parseInt(chainIdRaw, 10) : chainIdRaw;
-  const config = useMemo(() => getChainConfig(chainId), [chainId]);
+  const activeWallet = wallets?.[0];
+  const [currentChainId, setCurrentChainId] = useState<number>(FALLBACK_CHAIN_ID);
+
+  // Parse chainId from wallet (can be string like "eip155:8453" or number)
+  useEffect(() => {
+    if (!activeWallet?.chainId) {
+      setCurrentChainId(FALLBACK_CHAIN_ID);
+      return;
+    }
+
+    let chainId: number;
+    if (typeof activeWallet.chainId === 'string') {
+      // Handle "eip155:8453" format
+      const parts = activeWallet.chainId.split(':');
+      chainId = parseInt(parts[parts.length - 1], 10);
+    } else {
+      chainId = activeWallet.chainId;
+    }
+
+    if (!isNaN(chainId) && chainId !== currentChainId) {
+      setCurrentChainId(chainId);
+    }
+  }, [activeWallet?.chainId]);
+
+  const config = useMemo(() => getChainConfig(currentChainId), [currentChainId]);
 
   return {
     chainId: config.id,

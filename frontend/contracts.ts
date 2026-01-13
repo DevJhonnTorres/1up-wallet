@@ -6,7 +6,7 @@ export const CONTRACTS = {
       "chainId": 1,
       "contracts": {
         "ZKPassportNFT": {
-          "address": "0x76235436cbD3F2ff12CC3610f2643654211Efb3d",
+          "address": "0x52b13De80B98f8fA55B00F1A7B6deB6443Df4759",
           "abi": [
             {
               "inputs": [
@@ -806,7 +806,7 @@ export const CONTRACTS = {
           ]
         },
         "FaucetVault": {
-          "address": "0x9Df46E1C221F8b067343f9B760F5Cb2c4757FE2d",
+          "address": "0xc01596D5Fd66a6F4F3C23239462BE7bbC2f936f2",
           "abi": [
             {
               "inputs": [
@@ -1179,7 +1179,7 @@ export const CONTRACTS = {
           ]
         },
         "Swag1155": {
-          "address": "0x25B43cE10ffD04Cb90123D7582E6B5100B27f9cB",
+          "address": "0xEb2956BA73AD4C97cCd66BCd81559a8E153173e4",
           "abi": [
             {
               "inputs": [
@@ -1201,6 +1201,27 @@ export const CONTRACTS = {
               ],
               "stateMutability": "nonpayable",
               "type": "constructor"
+            },
+            {
+              "inputs": [],
+              "name": "AccessControlBadConfirmation",
+              "type": "error"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "neededRole",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "AccessControlUnauthorizedAccount",
+              "type": "error"
             },
             {
               "inputs": [
@@ -1305,31 +1326,35 @@ export const CONTRACTS = {
               "type": "error"
             },
             {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "owner",
-                  "type": "address"
-                }
-              ],
-              "name": "OwnableInvalidOwner",
-              "type": "error"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "account",
-                  "type": "address"
-                }
-              ],
-              "name": "OwnableUnauthorizedAccount",
-              "type": "error"
-            },
-            {
               "inputs": [],
               "name": "ReentrancyGuardReentrantCall",
               "type": "error"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "AdminAdded",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "AdminRemoved",
+              "type": "event"
             },
             {
               "anonymous": false,
@@ -1354,25 +1379,6 @@ export const CONTRACTS = {
                 }
               ],
               "name": "ApprovalForAll",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "previousOwner",
-                  "type": "address"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "newOwner",
-                  "type": "address"
-                }
-              ],
-              "name": "OwnershipTransferred",
               "type": "event"
             },
             {
@@ -1441,6 +1447,81 @@ export const CONTRACTS = {
                 }
               ],
               "name": "PurchasedBatch",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "previousAdminRole",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "newAdminRole",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "RoleAdminChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleGranted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleRevoked",
               "type": "event"
             },
             {
@@ -1613,6 +1694,45 @@ export const CONTRACTS = {
               "type": "event"
             },
             {
+              "inputs": [],
+              "name": "ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "DEFAULT_ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "addAdmin",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -1699,6 +1819,25 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleAdmin",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint256",
                   "name": "tokenId",
                   "type": "uint256"
@@ -1740,6 +1879,67 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "grantRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "hasRole",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "isAdmin",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "address",
                   "name": "account",
                   "type": "address"
@@ -1762,13 +1962,19 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
-              "inputs": [],
-              "name": "listTokenIds",
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "isSuperAdmin",
               "outputs": [
                 {
-                  "internalType": "uint256[]",
+                  "internalType": "bool",
                   "name": "",
-                  "type": "uint256[]"
+                  "type": "bool"
                 }
               ],
               "stateMutability": "view",
@@ -1776,12 +1982,12 @@ export const CONTRACTS = {
             },
             {
               "inputs": [],
-              "name": "owner",
+              "name": "listTokenIds",
               "outputs": [
                 {
-                  "internalType": "address",
+                  "internalType": "uint256[]",
                   "name": "",
-                  "type": "address"
+                  "type": "uint256[]"
                 }
               ],
               "stateMutability": "view",
@@ -1807,8 +2013,50 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
-              "inputs": [],
-              "name": "renounceOwnership",
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "removeAdmin",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "callerConfirmation",
+                  "type": "address"
+                }
+              ],
+              "name": "renounceRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "revokeRole",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -2014,19 +2262,6 @@ export const CONTRACTS = {
                 }
               ],
               "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "newOwner",
-                  "type": "address"
-                }
-              ],
-              "name": "transferOwnership",
-              "outputs": [],
-              "stateMutability": "nonpayable",
               "type": "function"
             },
             {
@@ -2117,7 +2352,7 @@ export const CONTRACTS = {
       "chainId": 130,
       "contracts": {
         "ZKPassportNFT": {
-          "address": "0x01401f4802bcD0e1Ee4fA7E42a1b7f48Ab82d121",
+          "address": "0xD9663db045850171850fd1298A2176B329A67928",
           "abi": [
             {
               "inputs": [
@@ -2917,7 +3152,7 @@ export const CONTRACTS = {
           ]
         },
         "FaucetVault": {
-          "address": "0x016d7D55708f7b7b39693e2b46D69F290537420B",
+          "address": "0x94B9f649f8825d5d797E37d04DFC66d612750b10",
           "abi": [
             {
               "inputs": [
@@ -3290,7 +3525,7 @@ export const CONTRACTS = {
           ]
         },
         "Swag1155": {
-          "address": "0x46Fb79966210f4d2C3c1Fb1a5c05330B401FDf5C",
+          "address": "0x2940e286B41d279b61E484B98a08498E355E4778",
           "abi": [
             {
               "inputs": [
@@ -3312,6 +3547,27 @@ export const CONTRACTS = {
               ],
               "stateMutability": "nonpayable",
               "type": "constructor"
+            },
+            {
+              "inputs": [],
+              "name": "AccessControlBadConfirmation",
+              "type": "error"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "neededRole",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "AccessControlUnauthorizedAccount",
+              "type": "error"
             },
             {
               "inputs": [
@@ -3416,31 +3672,35 @@ export const CONTRACTS = {
               "type": "error"
             },
             {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "owner",
-                  "type": "address"
-                }
-              ],
-              "name": "OwnableInvalidOwner",
-              "type": "error"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "account",
-                  "type": "address"
-                }
-              ],
-              "name": "OwnableUnauthorizedAccount",
-              "type": "error"
-            },
-            {
               "inputs": [],
               "name": "ReentrancyGuardReentrantCall",
               "type": "error"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "AdminAdded",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "AdminRemoved",
+              "type": "event"
             },
             {
               "anonymous": false,
@@ -3465,25 +3725,6 @@ export const CONTRACTS = {
                 }
               ],
               "name": "ApprovalForAll",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "previousOwner",
-                  "type": "address"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "newOwner",
-                  "type": "address"
-                }
-              ],
-              "name": "OwnershipTransferred",
               "type": "event"
             },
             {
@@ -3552,6 +3793,81 @@ export const CONTRACTS = {
                 }
               ],
               "name": "PurchasedBatch",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "previousAdminRole",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "newAdminRole",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "RoleAdminChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleGranted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleRevoked",
               "type": "event"
             },
             {
@@ -3724,6 +4040,45 @@ export const CONTRACTS = {
               "type": "event"
             },
             {
+              "inputs": [],
+              "name": "ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "DEFAULT_ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "addAdmin",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -3810,6 +4165,25 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleAdmin",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint256",
                   "name": "tokenId",
                   "type": "uint256"
@@ -3851,6 +4225,67 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "grantRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "hasRole",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "isAdmin",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "address",
                   "name": "account",
                   "type": "address"
@@ -3873,13 +4308,19 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
-              "inputs": [],
-              "name": "listTokenIds",
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "isSuperAdmin",
               "outputs": [
                 {
-                  "internalType": "uint256[]",
+                  "internalType": "bool",
                   "name": "",
-                  "type": "uint256[]"
+                  "type": "bool"
                 }
               ],
               "stateMutability": "view",
@@ -3887,12 +4328,12 @@ export const CONTRACTS = {
             },
             {
               "inputs": [],
-              "name": "owner",
+              "name": "listTokenIds",
               "outputs": [
                 {
-                  "internalType": "address",
+                  "internalType": "uint256[]",
                   "name": "",
-                  "type": "address"
+                  "type": "uint256[]"
                 }
               ],
               "stateMutability": "view",
@@ -3918,8 +4359,50 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
-              "inputs": [],
-              "name": "renounceOwnership",
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "removeAdmin",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "callerConfirmation",
+                  "type": "address"
+                }
+              ],
+              "name": "renounceRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "revokeRole",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -4125,19 +4608,6 @@ export const CONTRACTS = {
                 }
               ],
               "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "newOwner",
-                  "type": "address"
-                }
-              ],
-              "name": "transferOwnership",
-              "outputs": [],
-              "stateMutability": "nonpayable",
               "type": "function"
             },
             {
@@ -4228,7 +4698,7 @@ export const CONTRACTS = {
       "chainId": 8453,
       "contracts": {
         "ZKPassportNFT": {
-          "address": "0xF5Ead2D1afEF74D50d96f8721288A9225b6C7aCF",
+          "address": "0x3Baf60A713d62A26C63E1da0502f109b7D26ac06",
           "abi": [
             {
               "inputs": [
@@ -5028,7 +5498,7 @@ export const CONTRACTS = {
           ]
         },
         "FaucetVault": {
-          "address": "0xfAcd4Af22D292AEB79efEbdE655E55636e45a6c0",
+          "address": "0x96729E5fE27Cd7c98f44c7E69fd15a966c1aDf8C",
           "abi": [
             {
               "inputs": [
@@ -5401,7 +5871,7 @@ export const CONTRACTS = {
           ]
         },
         "Swag1155": {
-          "address": "0x8a4A23F111F2674116368d2960e4AC9B5ea81Da7",
+          "address": "0x8d00FD4630bac5E077474d2bF4faAf4C703015Bb",
           "abi": [
             {
               "inputs": [
@@ -5423,6 +5893,27 @@ export const CONTRACTS = {
               ],
               "stateMutability": "nonpayable",
               "type": "constructor"
+            },
+            {
+              "inputs": [],
+              "name": "AccessControlBadConfirmation",
+              "type": "error"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "neededRole",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "AccessControlUnauthorizedAccount",
+              "type": "error"
             },
             {
               "inputs": [
@@ -5527,31 +6018,35 @@ export const CONTRACTS = {
               "type": "error"
             },
             {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "owner",
-                  "type": "address"
-                }
-              ],
-              "name": "OwnableInvalidOwner",
-              "type": "error"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "account",
-                  "type": "address"
-                }
-              ],
-              "name": "OwnableUnauthorizedAccount",
-              "type": "error"
-            },
-            {
               "inputs": [],
               "name": "ReentrancyGuardReentrantCall",
               "type": "error"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "AdminAdded",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "AdminRemoved",
+              "type": "event"
             },
             {
               "anonymous": false,
@@ -5576,25 +6071,6 @@ export const CONTRACTS = {
                 }
               ],
               "name": "ApprovalForAll",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "previousOwner",
-                  "type": "address"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "newOwner",
-                  "type": "address"
-                }
-              ],
-              "name": "OwnershipTransferred",
               "type": "event"
             },
             {
@@ -5663,6 +6139,81 @@ export const CONTRACTS = {
                 }
               ],
               "name": "PurchasedBatch",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "previousAdminRole",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "newAdminRole",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "RoleAdminChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleGranted",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "sender",
+                  "type": "address"
+                }
+              ],
+              "name": "RoleRevoked",
               "type": "event"
             },
             {
@@ -5835,6 +6386,45 @@ export const CONTRACTS = {
               "type": "event"
             },
             {
+              "inputs": [],
+              "name": "ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "DEFAULT_ADMIN_ROLE",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "addAdmin",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
               "inputs": [
                 {
                   "internalType": "address",
@@ -5921,6 +6511,25 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "getRoleAdmin",
+              "outputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint256",
                   "name": "tokenId",
                   "type": "uint256"
@@ -5962,6 +6571,67 @@ export const CONTRACTS = {
             {
               "inputs": [
                 {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "grantRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "hasRole",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "isAdmin",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "address",
                   "name": "account",
                   "type": "address"
@@ -5984,13 +6654,19 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
-              "inputs": [],
-              "name": "listTokenIds",
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "isSuperAdmin",
               "outputs": [
                 {
-                  "internalType": "uint256[]",
+                  "internalType": "bool",
                   "name": "",
-                  "type": "uint256[]"
+                  "type": "bool"
                 }
               ],
               "stateMutability": "view",
@@ -5998,12 +6674,12 @@ export const CONTRACTS = {
             },
             {
               "inputs": [],
-              "name": "owner",
+              "name": "listTokenIds",
               "outputs": [
                 {
-                  "internalType": "address",
+                  "internalType": "uint256[]",
                   "name": "",
-                  "type": "address"
+                  "type": "uint256[]"
                 }
               ],
               "stateMutability": "view",
@@ -6029,8 +6705,50 @@ export const CONTRACTS = {
               "type": "function"
             },
             {
-              "inputs": [],
-              "name": "renounceOwnership",
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "admin",
+                  "type": "address"
+                }
+              ],
+              "name": "removeAdmin",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "callerConfirmation",
+                  "type": "address"
+                }
+              ],
+              "name": "renounceRole",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "role",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "account",
+                  "type": "address"
+                }
+              ],
+              "name": "revokeRole",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -6236,19 +6954,6 @@ export const CONTRACTS = {
                 }
               ],
               "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "newOwner",
-                  "type": "address"
-                }
-              ],
-              "name": "transferOwnership",
-              "outputs": [],
-              "stateMutability": "nonpayable",
               "type": "function"
             },
             {
@@ -6342,25 +7047,25 @@ export const ADDRESSES = {
   "ethereum": {
     "chainId": 1,
     "addresses": {
-      "ZKPassportNFT": "0x76235436cbD3F2ff12CC3610f2643654211Efb3d",
-      "FaucetVault": "0x9Df46E1C221F8b067343f9B760F5Cb2c4757FE2d",
-      "Swag1155": "0x25B43cE10ffD04Cb90123D7582E6B5100B27f9cB"
+      "ZKPassportNFT": "0x52b13De80B98f8fA55B00F1A7B6deB6443Df4759",
+      "FaucetVault": "0xc01596D5Fd66a6F4F3C23239462BE7bbC2f936f2",
+      "Swag1155": "0xEb2956BA73AD4C97cCd66BCd81559a8E153173e4"
     }
   },
   "unichain": {
     "chainId": 130,
     "addresses": {
-      "ZKPassportNFT": "0x01401f4802bcD0e1Ee4fA7E42a1b7f48Ab82d121",
-      "FaucetVault": "0x016d7D55708f7b7b39693e2b46D69F290537420B",
-      "Swag1155": "0x46Fb79966210f4d2C3c1Fb1a5c05330B401FDf5C"
+      "ZKPassportNFT": "0xD9663db045850171850fd1298A2176B329A67928",
+      "FaucetVault": "0x94B9f649f8825d5d797E37d04DFC66d612750b10",
+      "Swag1155": "0x2940e286B41d279b61E484B98a08498E355E4778"
     }
   },
   "base": {
     "chainId": 8453,
     "addresses": {
-      "ZKPassportNFT": "0xF5Ead2D1afEF74D50d96f8721288A9225b6C7aCF",
-      "FaucetVault": "0xfAcd4Af22D292AEB79efEbdE655E55636e45a6c0",
-      "Swag1155": "0x8a4A23F111F2674116368d2960e4AC9B5ea81Da7"
+      "ZKPassportNFT": "0x3Baf60A713d62A26C63E1da0502f109b7D26ac06",
+      "FaucetVault": "0x96729E5fE27Cd7c98f44c7E69fd15a966c1aDf8C",
+      "Swag1155": "0x8d00FD4630bac5E077474d2bF4faAf4C703015Bb"
     }
   }
 } as const;

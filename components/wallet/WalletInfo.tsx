@@ -8,6 +8,7 @@ import SendTokenModal from './SendTokenModal';
 import QRScanner from './QRScanner';
 import { parseUnits, encodeFunctionData } from 'viem';
 import { useTokenPrices } from '../../hooks/useTokenPrices';
+import { useActiveWallet } from '../../hooks/useActiveWallet';
 
 interface WalletInfoProps {
   wallet: Wallet;
@@ -28,6 +29,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   const { wallets } = useWallets();
   const { sendTransaction } = useSendTransaction();
   const { getPriceForToken } = useTokenPrices();
+  const { wallet: activeWallet, canUseSponsoredGas, isEmbeddedWallet, walletClientType } = useActiveWallet();
   
   // States for send token modal
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
@@ -100,74 +102,117 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   
   // Handle sending tokens
   const handleSendToken = async (recipient: string, amount: string) => {
-    if (!privyWallet) {
-      console.error("Wallet not found");
+    // Use active wallet from useActiveWallet hook (the wallet user logged in with)
+    const walletToUse = activeWallet || privyWallet;
+    
+    if (!walletToUse) {
+      console.error("No wallet found");
       return;
     }
+    
+    const walletIsEmbedded = walletToUse.walletClientType === 'privy';
+    
+    console.log('Sending transaction:', {
+      address: walletToUse.address,
+      type: walletToUse.walletClientType,
+      isEmbedded: walletIsEmbedded,
+      willSponsorGas: walletIsEmbedded // Sponsorship only for embedded
+    });
     
     setIsSendingTx(true);
     setTxHash(null);
     
     try {
-      // Get the provider from the wallet
-      const provider = await privyWallet.getEthereumProvider();
-      
-      // Always use Privy's native gas sponsorship 
-      if (selectedToken === 'ETH') {
-        // Send ETH with Privy native sponsorship
-        const value = parseUnits(amount, 18);
+      if (walletIsEmbedded) {
+        // Embedded wallet - use Privy's sendTransaction with gas sponsorship
+        if (selectedToken === 'ETH') {
+          const value = parseUnits(amount, 18);
+          const result = await sendTransaction(
+            {
+              to: recipient as `0x${string}`,
+              value,
+            },
+            {
+              sponsor: true, // Always sponsor for embedded wallets
+            } as any
+          );
+          setTxHash(result.hash);
+        } else if (selectedToken === 'USDC') {
+          const USDC_ADDRESS = '0x0b2c639c533813f4aa9d7837caf62653d097ff85';
+          const transferAbi = [{
+            inputs: [
+              { name: 'to', type: 'address' },
+              { name: 'amount', type: 'uint256' }
+            ],
+            name: 'transfer',
+            outputs: [{ name: '', type: 'bool' }],
+            stateMutability: 'nonpayable',
+            type: 'function'
+          }] as const;
+          
+          const usdcAmount = parseUnits(amount, 6);
+          const data = encodeFunctionData({
+            abi: transferAbi,
+            functionName: 'transfer',
+            args: [recipient as `0x${string}`, usdcAmount]
+          });
+          
+          const result = await sendTransaction(
+            {
+              to: USDC_ADDRESS as `0x${string}`,
+              data,
+            },
+            {
+              sponsor: true, // Always sponsor for embedded wallets
+            } as any
+          );
+          setTxHash(result.hash);
+        }
+      } else {
+        // External wallet (MetaMask, etc.) - use provider directly, user pays gas
+        const provider = await walletToUse.getEthereumProvider();
         
-        const result = await sendTransaction(
-          {
-            to: recipient as `0x${string}`,
-            value,
-          },
-          {
-            sponsor: true, // Enable Privy's native gas sponsorship
-          } as any // Type assertion for compatibility
-        );
-        
-        setTxHash(result.hash);
-        
-      } else if (selectedToken === 'USDC') {
-        // USDC contract integration
-        // Native USDC issued by Circle on Optimism
-        const USDC_ADDRESS = '0x0b2c639c533813f4aa9d7837caf62653d097ff85';
-        
-        // ERC20 transfer function ABI
-        const transferAbi = [{
-          inputs: [
-            { name: 'to', type: 'address' },
-            { name: 'amount', type: 'uint256' }
-          ],
-          name: 'transfer',
-          outputs: [{ name: '', type: 'bool' }],
-          stateMutability: 'nonpayable',
-          type: 'function'
-        }] as const;
-        
-        // Convert the amount to proper units (USDC has 6 decimals)
-        const usdcAmount = parseUnits(amount, 6);
-        
-        // Encode the function call data using viem
-        const data = encodeFunctionData({
-          abi: transferAbi,
-          functionName: 'transfer',
-          args: [recipient as `0x${string}`, usdcAmount]
-        });
-        
-        // Send USDC transfer with Privy native sponsorship
-        const result = await sendTransaction(
-          {
-            to: USDC_ADDRESS as `0x${string}`,
-            data,
-          },
-          {
-            sponsor: true, // Enable Privy's native gas sponsorship
-          } as any // Type assertion for compatibility
-        );
-        
-        setTxHash(result.hash);
+        if (selectedToken === 'ETH') {
+          const value = parseUnits(amount, 18);
+          const txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: walletToUse.address,
+              to: recipient,
+              value: `0x${value.toString(16)}`,
+            }],
+          });
+          setTxHash(txHash as string);
+        } else if (selectedToken === 'USDC') {
+          const USDC_ADDRESS = '0x0b2c639c533813f4aa9d7837caf62653d097ff85';
+          const transferAbi = [{
+            inputs: [
+              { name: 'to', type: 'address' },
+              { name: 'amount', type: 'uint256' }
+            ],
+            name: 'transfer',
+            outputs: [{ name: '', type: 'bool' }],
+            stateMutability: 'nonpayable',
+            type: 'function'
+          }] as const;
+          
+          const usdcAmount = parseUnits(amount, 6);
+          const data = encodeFunctionData({
+            abi: transferAbi,
+            functionName: 'transfer',
+            args: [recipient as `0x${string}`, usdcAmount]
+          });
+          
+          const txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: walletToUse.address,
+              to: USDC_ADDRESS,
+              data,
+            }],
+          });
+          setTxHash(txHash as string);
+        }
       }
       
       // Refresh balances after successful transaction
@@ -316,10 +361,23 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
               </div>
             </div>
             
-            {/* Total Balance */}
-            <div className="total-balance">
-              <div className="total-label">Total Value</div>
-              <div className="total-amount">{formatUsd(totalValueUsd)}</div>
+            {/* Total Balance - Featured */}
+            <div className="total-balance-featured">
+              <div className="total-balance-content">
+                <div className="total-label">Total Portfolio Value</div>
+                <div className="total-amount-large">{formatUsd(totalValueUsd)}</div>
+              </div>
+              <div className="portfolio-breakdown">
+                <span className="breakdown-item">
+                  <img src={ethLogoUrl} alt="ETH" className="breakdown-icon" />
+                  {formatUsd(ethValueUsd)}
+                </span>
+                <span className="breakdown-divider">+</span>
+                <span className="breakdown-item">
+                  <img src={usdcLogoUrl} alt="USDC" className="breakdown-icon" />
+                  {formatUsd(usdcValueUsd)}
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -376,7 +434,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
       
       <style jsx>{`
         .wallet-info {
-          background: var(--bg-secondary);
+          background: transparent;
           padding: 1.5rem;
           border-radius: 8px;
           margin-top: 1rem;
@@ -387,7 +445,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         
         h3 {
           margin: 0 0 1rem 0;
-          color: var(--text-color);
+          color: #e5e7eb;
         }
         
         .wallet-address-container {
@@ -395,10 +453,10 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           flex-direction: column;
           align-items: center;
           margin-bottom: 1.5rem;
-          background: var(--card-bg);
+          background: rgba(17, 24, 39, 0.8);
           border-radius: 12px;
-          border: 1px solid var(--card-border);
-          box-shadow: 0 1px 3px var(--card-shadow);
+          border: 1px solid rgba(6, 182, 212, 0.2);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
           padding: 1.5rem;
         }
         
@@ -413,8 +471,8 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           background: white;
           padding: 10px;
           border-radius: 8px;
-          box-shadow: 0 2px 8px var(--card-shadow);
-          border: 1px solid var(--card-border);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          border: 1px solid rgba(6, 182, 212, 0.3);
         }
         
         .qr-code img {
@@ -426,7 +484,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         .qr-help {
           margin: 0.5rem 0 0 0;
           font-size: 0.85rem;
-          color: var(--text-tertiary);
+          color: #9ca3af;
         }
         
         .address-details {
@@ -442,7 +500,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         
         .address-header h4 {
           margin: 0;
-          color: var(--text-color);
+          color: #e5e7eb;
         }
         
         .export-button {
@@ -462,10 +520,10 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           position: relative;
           display: flex;
           align-items: center;
-          background: var(--bg-tertiary);
+          background: rgba(31, 41, 55, 0.8);
           padding: 0.75rem 1rem;
           border-radius: 8px;
-          border: 1px solid var(--card-border);
+          border: 1px solid rgba(6, 182, 212, 0.2);
           margin-bottom: 0.75rem;
         }
         
@@ -474,43 +532,46 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           font-family: monospace;
           overflow-wrap: break-word;
           font-size: 0.9rem;
-          color: var(--text-color);
+          color: #06b6d4;
           user-select: all;
           overflow: hidden;
           text-overflow: ellipsis;
         }
         
         .copy-button {
-          background: none;
-          border: none;
+          background: rgba(6, 182, 212, 0.1);
+          border: 1px solid rgba(6, 182, 212, 0.3);
           cursor: pointer;
-          padding: 0.25rem;
-          border-radius: 4px;
+          padding: 0.5rem 1rem;
+          border-radius: 6px;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--text-secondary);
-          transition: background-color 0.2s;
+          color: #06b6d4;
+          transition: all 0.2s;
+          font-size: 0.85rem;
         }
         
         .copy-button:hover {
-          background-color: var(--toggle-hover-bg);
+          background-color: rgba(6, 182, 212, 0.2);
         }
         
         .view-button {
           display: inline-flex;
           align-items: center;
           gap: 0.375rem;
-          color: var(--primary-color);
+          color: #a855f7;
           text-decoration: none;
           font-size: 0.85rem;
-          padding: 0.25rem 0;
-          transition: color 0.2s;
+          padding: 0.5rem 1rem;
+          border: 1px solid rgba(168, 85, 247, 0.3);
+          border-radius: 6px;
+          background: rgba(168, 85, 247, 0.1);
+          transition: all 0.2s;
         }
         
         .view-button:hover {
-          color: #3D53D9;
-          text-decoration: underline;
+          background: rgba(168, 85, 247, 0.2);
         }
         
         .address-actions {
@@ -531,7 +592,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         
         .balance-header h4 {
           margin: 0;
-          color: var(--text-color);
+          color: #e5e7eb;
         }
         
         .balance-actions {
@@ -555,6 +616,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         .loading-balances {
           margin-top: 1rem;
           text-align: center;
+          color: #9ca3af;
         }
         
         .token-list {
@@ -568,16 +630,17 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           justify-content: space-between;
           align-items: center;
           padding: 1rem;
-          background: var(--card-bg);
+          background: rgba(17, 24, 39, 0.8);
           border-radius: 12px;
-          border: 1px solid var(--card-border);
-          box-shadow: 0 1px 3px var(--card-shadow);
-          transition: transform 0.2s, box-shadow 0.2s;
+          border: 1px solid rgba(6, 182, 212, 0.2);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+          transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
         }
         
         .token-item:hover {
           transform: translateY(-2px);
-          box-shadow: 0 3px 6px var(--card-shadow);
+          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+          border-color: rgba(6, 182, 212, 0.4);
         }
         
         .token-info {
@@ -600,12 +663,12 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         
         .token-name {
           font-weight: 500;
-          color: var(--text-color);
+          color: #e5e7eb;
         }
         
         .token-symbol {
           font-size: 0.8rem;
-          color: var(--text-secondary);
+          color: #9ca3af;
         }
         
         .token-balance {
@@ -617,12 +680,12 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         .balance-amount {
           font-weight: 600;
           font-size: 1.1rem;
-          color: var(--text-color);
+          color: #06b6d4;
         }
         
         .balance-usd {
           font-size: 0.85rem;
-          color: var(--text-secondary);
+          color: #9ca3af;
           margin-top: 0.2rem;
         }
         
@@ -631,25 +694,64 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           gap: 0.75rem;
         }
         
-        .total-balance {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0.75rem 1rem;
-          background: rgba(75, 102, 243, 0.05);
-          border-radius: 8px;
+        .total-balance-featured {
+          background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+          border: 1px solid rgba(6, 182, 212, 0.4);
+          border-radius: 16px;
+          padding: 1.5rem;
+          margin-bottom: 1rem;
+          text-align: center;
+        }
+        
+        .total-balance-content {
           margin-bottom: 1rem;
         }
         
         .total-label {
+          font-size: 0.875rem;
           font-weight: 500;
-          color: var(--text-secondary);
+          color: #9ca3af;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 0.5rem;
         }
         
-        .total-amount {
-          font-weight: 700;
-          font-size: 1.2rem;
-          color: var(--text-color);
+        .total-amount-large {
+          font-weight: 800;
+          font-size: 2.5rem;
+          background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          line-height: 1.2;
+        }
+        
+        .portfolio-breakdown {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 0.75rem;
+          padding-top: 1rem;
+          border-top: 1px solid rgba(6, 182, 212, 0.2);
+        }
+        
+        .breakdown-item {
+          display: flex;
+          align-items: center;
+          gap: 0.375rem;
+          font-size: 0.875rem;
+          color: #9ca3af;
+        }
+        
+        .breakdown-icon {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+        }
+        
+        .breakdown-divider {
+          color: #4b5563;
+          font-weight: 500;
         }
         
         .transaction-receipt {

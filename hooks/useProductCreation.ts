@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSendTransaction } from '@privy-io/react-auth';
+import { useSendTransaction, useWallets } from '@privy-io/react-auth';
 import { usePrivy } from '@privy-io/react-auth';
 import { encodeFunctionData } from 'viem';
 import Swag1155ABI from '../frontend/abis/Swag1155.json';
@@ -28,19 +28,44 @@ const INITIAL_STATE: CreationState = {
 };
 
 export function useProductCreation() {
-  const { swag1155 } = useSwagAddresses();
+  const { swag1155, chainId: expectedChainId, label: chainLabel } = useSwagAddresses();
   const { user } = usePrivy();
+  const { wallets } = useWallets();
   const { sendTransaction } = useSendTransaction();
   const [state, setState] = useState<CreationState>(INITIAL_STATE);
+
+  // Get the first wallet (the one the user logged in with)
+  const activeWallet = wallets?.[0];
+
+  // Helper to ensure wallet is on the correct chain
+  const ensureCorrectChain = async () => {
+    if (!activeWallet) return false;
+    
+    const walletChainId = typeof activeWallet.chainId === 'string' 
+      ? parseInt(activeWallet.chainId, 10) 
+      : activeWallet.chainId;
+    
+    if (walletChainId !== expectedChainId) {
+      try {
+        await activeWallet.switchChain(expectedChainId);
+        return true;
+      } catch (error) {
+        throw new Error(`Please switch your wallet to ${chainLabel} (chain ID: ${expectedChainId})`);
+      }
+    }
+    return true;
+  };
 
   const createProduct = async (product: ProductFormData) => {
     if (!swag1155) {
       throw new Error('Missing Swag1155 address for the selected chain');
     }
 
-    if (!user) {
+    if (!user || !activeWallet) {
       throw new Error('Connect your wallet to create a product');
     }
+
+    await ensureCorrectChain();
 
     if (!product.sizes.length) {
       throw new Error('Select at least one size');
@@ -69,11 +94,15 @@ export function useProductCreation() {
           args: [tokenId, priceBaseUnits, BigInt(supplyPerSize), true, metadataUri],
         });
 
+        const isEmbedded = activeWallet.walletClientType === 'privy';
+        
         await sendTransaction({
-          to: swag1155,
+          to: swag1155 as `0x${string}`,
           data,
+          chainId: expectedChainId,
         }, {
-          sponsor: true,
+          address: activeWallet.address,
+          sponsor: isEmbedded,
         } as any);
 
         setState((prev) => ({
@@ -93,7 +122,10 @@ export function useProductCreation() {
 
   return {
     createProduct,
-    canCreate: Boolean(user && swag1155),
+    canCreate: Boolean(user && swag1155 && activeWallet),
+    walletAddress: activeWallet?.address,
+    expectedChainId,
+    chainLabel,
     ...state,
   };
 }

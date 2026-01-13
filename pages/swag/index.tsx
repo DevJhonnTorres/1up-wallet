@@ -1,13 +1,28 @@
+import { useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import Navigation from '../../components/Navigation';
 import Layout from '../../components/shared/Layout';
 import { ProductCard } from '../../components/swag/ProductCard';
 import { useActiveTokenIds } from '../../hooks/useSwagStore';
-import { getSupportedNetworks, useSwagAddresses } from '../../utils/network';
+import { useSwagAddresses } from '../../utils/network';
 
 export default function SwagStorePage() {
-  const { tokenIds, isLoading } = useActiveTokenIds();
-  const networks = getSupportedNetworks();
-  const { chainId } = useSwagAddresses();
+  const queryClient = useQueryClient();
+  const { tokenIds, isLoading, error, refetch } = useActiveTokenIds();
+  const { chainId, swag1155 } = useSwagAddresses();
+  const prevChainId = useRef(chainId);
+
+  // Invalidate all swag queries when chain changes
+  useEffect(() => {
+    if (prevChainId.current !== chainId) {
+      // Clear all swag-related queries from cache
+      queryClient.removeQueries({ queryKey: ['swag-token-ids'] });
+      queryClient.removeQueries({ queryKey: ['swag-variant-state'] });
+      queryClient.removeQueries({ queryKey: ['swag-variant-uri'] });
+      queryClient.removeQueries({ queryKey: ['swag-metadata'] });
+      prevChainId.current = chainId;
+    }
+  }, [chainId, queryClient]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-930 to-black">
@@ -19,18 +34,23 @@ export default function SwagStorePage() {
           <p className="mx-auto mt-3 max-w-2xl text-slate-400">
             Multi-chain merch drops backed by the Swag1155 contract. Connect on Base, Ethereum, or Unichain to claim your gear with USDC.
           </p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-300">
-            {networks.map((network) => (
-              <span key={network.id} className="rounded-full border border-slate-700 px-4 py-1 uppercase tracking-wide">
-                {network.name}
-              </span>
-            ))}
-          </div>
         </section>
 
         {isLoading && (
           <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-center text-slate-400">
             Syncing on-chain catalog...
+          </div>
+        )}
+
+        {error && (
+          <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-6 text-center">
+            <p className="text-red-300 mb-2">Error loading products: {error}</p>
+            <button 
+              onClick={() => refetch()}
+              className="text-cyan-400 hover:text-cyan-300 text-sm underline"
+            >
+              Retry
+            </button>
           </div>
         )}
 
