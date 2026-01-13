@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { QRCodeSVG } from 'qrcode.react';
 import { useWallets, useSendTransaction } from '@privy-io/react-auth';
 import { encodeFunctionData } from 'viem';
@@ -336,16 +337,16 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
 
         <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
           <p className="text-green-400 font-mono text-sm">
-            Your soulbound NFT proves you're a unique verified human. You can now claim from the faucet!
+            Your soulbound NFT proves you&apos;re a unique verified human. You can now claim from the faucet!
           </p>
         </div>
 
-        <a
+        <Link
           href="/faucet"
           className="block w-full py-3 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 rounded-lg text-white font-mono font-bold text-center transition-all"
         >
           GO_TO_FAUCET →
-        </a>
+        </Link>
       </div>
     );
   }
@@ -357,7 +358,7 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
         <span className="text-3xl">🛡️</span>
         <div>
           <h2 className="text-xl font-bold text-cyan-400 font-mono">SYBIL_VERIFICATION</h2>
-          <p className="text-gray-500 text-sm font-mono">Prove you're a unique human</p>
+          <p className="text-gray-500 text-sm font-mono">Prove you&apos;re a unique human</p>
         </div>
       </div>
 
@@ -367,7 +368,7 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
             <p className="text-sm text-blue-400 font-mono font-bold mb-2">HOW_IT_WORKS:</p>
             <ol className="list-decimal list-inside space-y-1 text-xs text-blue-300 font-mono">
-              <li>Click "Start Verification"</li>
+              <li>Click &quot;Start Verification&quot;</li>
               <li>Scan QR code with ZKPassport app</li>
               <li>Scan your passport NFC chip</li>
               <li>Complete face verification</li>
@@ -380,7 +381,7 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
             <ul className="space-y-1 text-xs text-purple-300 font-mono">
               <li>• <span className="text-purple-400">Unique ID</span> - Your anonymous identity hash</li>
               <li>• <span className="text-purple-400">Face Match</span> - Biometric verification status</li>
-              <li>• <span className="text-purple-400">Personhood</span> - Proof you're a real human</li>
+              <li>• <span className="text-purple-400">Personhood</span> - Proof you&apos;re a real human</li>
             </ul>
           </div>
 
@@ -605,12 +606,12 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
             </a>
           </div>
 
-          <a
+          <Link
             href="/faucet"
             className="block w-full py-3 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 rounded-lg text-white font-mono font-bold text-center transition-all"
           >
             CLAIM_FROM_FAUCET →
-          </a>
+          </Link>
         </div>
       )}
 

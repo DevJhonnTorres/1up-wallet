@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useRouter } from 'next/router';
 import Layout from '../components/shared/Layout';
@@ -75,7 +76,7 @@ export default function WalletPage() {
               <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">ETH CALI Services</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <a href="/faucet" className="flex items-center gap-3 p-4 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-all group">
+                  <Link href="/faucet" className="flex items-center gap-3 p-4 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-all group">
                     <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
                       <div className="w-5 h-5 bg-green-400 rounded"></div>
                     </div>
@@ -83,17 +84,17 @@ export default function WalletPage() {
                       <h4 className="font-bold text-green-400 group-hover:text-green-300">ETH Faucet</h4>
                       <p className="text-gray-500 text-xs">Get sponsored ETH for verified users</p>
                     </div>
-                  </a>
+                  </Link>
                   
-                  <a href="/sybil" className="flex items-center gap-3 p-4 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-all group">
+                  <Link href="/sybil" className="flex items-center gap-3 p-4 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-all group">
                     <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
                       <div className="w-5 h-5 bg-purple-400 rounded-full flex items-center justify-center text-white font-bold text-xs">ID</div>
                     </div>
                     <div>
-                      <h4 className="font-bold text-purple-400 group-hover:text-purple-300">Digital Identity</h4>
-                      <p className="text-gray-500 text-xs">ZKPassport sybil-resistance verification</p>
+                      <h4 className="font-bold text-purple-400 group-hover:text-purple-300">Sybil Proof</h4>
+                      <p className="text-gray-500 text-xs">Prove your personhood with ZKPassport</p>
                     </div>
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>

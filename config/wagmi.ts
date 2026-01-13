@@ -26,7 +26,6 @@ const unichainRpc = process.env.NEXT_PUBLIC_UNICHAIN_RPC_URL || DEFAULT_UNICHAIN
 export const wagmiChains = [base, mainnet, unichain] as const;
 
 export const wagmiConfig = createConfig({
-  autoConnect: true,
   chains: wagmiChains as any,
   connectors: [injected({ shimDisconnect: true })],
   transports: {

@@ -324,7 +324,7 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
               </button>
             </div>
             <p className="text-xs text-red-400/60 font-mono">
-              ⚠️ Caution: Only change if you know what you're doing
+              ⚠️ Caution: Only change if you know what you&apos;re doing
             </p>
           </div>
         </div>

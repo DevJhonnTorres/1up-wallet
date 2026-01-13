@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useChainId } from 'wagmi';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 
 type ChainLabel = 'base' | 'ethereum' | 'unichain';
 
@@ -65,7 +65,10 @@ export function getExplorerUrl(chainId?: number): string {
 }
 
 export function useSwagAddresses() {
-  const chainId = useChainId();
+  const { wallets } = useWallets();
+  const embeddedWallet = wallets.find(w => w.walletClientType === 'privy');
+  const chainIdRaw = embeddedWallet?.chainId || FALLBACK_CHAIN_ID;
+  const chainId = typeof chainIdRaw === 'string' ? parseInt(chainIdRaw, 10) : chainIdRaw;
   const config = useMemo(() => getChainConfig(chainId), [chainId]);
 
   return {

@@ -1,4 +1,4 @@
-import { useAccount } from 'wagmi';
+import { usePrivy } from '@privy-io/react-auth';
 import { useState } from 'react';
 import { useProductCreation } from '../../hooks/useProductCreation';
 import { GenderOption, ProductFormData, SizeOption } from '../../types/swag';
@@ -7,7 +7,7 @@ const SIZES: SizeOption[] = ['S', 'M', 'L', 'XL', 'NA'];
 const GENDERS: GenderOption[] = ['Male', 'Female', 'Unisex'];
 
 export function AdminProductForm() {
-  const { address, isConnected } = useAccount();
+  const { user } = usePrivy();
   const { createProduct, isLoading, progress, currentStep, error } = useProductCreation();
   const [form, setForm] = useState<ProductFormData>({
     name: '',
@@ -60,7 +60,7 @@ export function AdminProductForm() {
     }
   };
 
-  if (!isConnected) {
+  if (!user) {
     return (
       <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4 text-yellow-200">
         Connect a wallet to create products.
@@ -73,7 +73,7 @@ export function AdminProductForm() {
       <header className="space-y-1">
         <p className="text-xs uppercase tracking-wide text-slate-500">Admin Panel</p>
         <h2 className="text-2xl font-semibold text-white">Create Swag Product</h2>
-        {address && <p className="text-xs text-slate-500">Connected: {address}</p>}
+        {user && <p className="text-xs text-slate-500">Connected: {user.id}</p>}
       </header>
 
       <div className="grid gap-4 md:grid-cols-2">

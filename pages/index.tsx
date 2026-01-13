@@ -121,7 +121,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-lg font-bold text-blue-400 mb-3">Sponsorship</h3>
                 <p className="text-gray-500 text-sm">
-                  If it's your first time, don't be afraid. We sponsor your transactions.
+                  If it&apos;s your first time, don&apos;t be afraid. We sponsor your transactions.
                 </p>
               </div>
 

@@ -28,7 +28,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const result = await pinata.pinJSONToIPFS(metadata, {
       pinataMetadata: {
         name: `swag1155-${Date.now()}`,
-        keyvalues: { type: 'swag-metadata' },
       },
     });
 

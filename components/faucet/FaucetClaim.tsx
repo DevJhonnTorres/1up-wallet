@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useWallets, useSendTransaction } from '@privy-io/react-auth';
 import {
   hasNFTByAddress,
@@ -337,12 +338,12 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
       {/* NFT Link */}
       {!hasNFT && (
         <div className="text-center">
-          <a
+          <Link
             href="/sybil"
             className="text-cyan-400 font-mono text-sm hover:underline"
           >
             → Get your ZKPassport NFT to become eligible
-          </a>
+          </Link>
         </div>
       )}
 

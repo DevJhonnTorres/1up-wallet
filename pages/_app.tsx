@@ -4,10 +4,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import Head from 'next/head';
 import type { AppProps } from 'next/app';
 import { useState } from 'react';
-import { WagmiProvider } from 'wagmi';
 import '../styles/globals.css';
 import { ThemeProvider } from '../contexts/ThemeContext';
-import { wagmiConfig } from '../config/wagmi';
 
 function MyApp({ Component, pageProps }: AppProps) {
   // App ID from the Privy Dashboard (using environment variable)
@@ -67,16 +65,14 @@ function MyApp({ Component, pageProps }: AppProps) {
           },
         }}
       >
-        <WagmiProvider config={wagmiConfig}>
           <QueryClientProvider client={queryClient}>
             <Component {...pageProps} />
             {process.env.NODE_ENV === 'development' && (
               <ReactQueryDevtools initialIsOpen={false} />
             )}
           </QueryClientProvider>
-        </WagmiProvider>
-      </PrivyProvider>
-    </ThemeProvider>
+        </PrivyProvider>
+      </ThemeProvider>
   );
 }
 

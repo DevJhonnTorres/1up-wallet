@@ -169,7 +169,7 @@ export default function KYCVerification({
       </div>
       
       <p className="text-gray-600 dark:text-gray-300 mb-6">
-        Verify you're a unique person using your passport. One account per person, complete privacy.
+        Verify you&apos;re a unique person using your passport. One account per person, complete privacy.
       </p>
 
       {verificationStatus === 'idle' && (
@@ -178,7 +178,7 @@ export default function KYCVerification({
             <div className="text-sm text-blue-800 dark:text-blue-300">
               <p className="font-medium mb-2">Quick steps:</p>
               <ol className="list-decimal list-inside space-y-1">
-                <li>Click "Start Verification"</li>
+                <li>Click &quot;Start Verification&quot;</li>
                 <li>Scan QR code with ZKPassport app</li>
                 <li>Scan passport and complete face match</li>
                 <li>Done! (~10 seconds)</li>
@@ -225,7 +225,7 @@ export default function KYCVerification({
                 rel="noopener noreferrer"
                 className="text-xs text-blue-600 hover:underline"
               >
-                Don't have the app? Click here
+                Don&apos;t have the app? Click here
               </a>
             </div>
           )}
@@ -272,7 +272,7 @@ export default function KYCVerification({
             </h4>
           </div>
           <p className="text-green-700 dark:text-green-400">
-            Your personhood has been verified. You're registered as a unique person.
+            Your personhood has been verified. You&apos;re registered as a unique person.
           </p>
         </div>
       )}

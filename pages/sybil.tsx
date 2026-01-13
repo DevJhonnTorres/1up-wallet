@@ -67,7 +67,7 @@ export default function SybilPage() {
               <h3 className="text-sm font-bold text-cyan-400 font-mono mb-3">WHAT_IS_SYBIL_RESISTANCE?</h3>
               <p className="text-xs text-gray-500 font-mono leading-relaxed">
                 Sybil resistance prevents one person from creating multiple accounts. 
-                By verifying your identity with ZKPassport, you prove you're a unique human 
+                By verifying your identity with ZKPassport, you prove you&apos;re a unique human 
                 without revealing any personal information.
               </p>
             </div>
@@ -76,7 +76,7 @@ export default function SybilPage() {
             <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4">
               <h3 className="text-sm font-bold text-purple-400 font-mono mb-3">ABOUT_ZKPASSPORT</h3>
               <p className="text-xs text-gray-500 font-mono leading-relaxed">
-                ZKPassport uses zero-knowledge proofs to verify your passport's NFC chip 
+                ZKPassport uses zero-knowledge proofs to verify your passport&apos;s NFC chip 
                 and match your face locally on your device. No data leaves your phone - 
                 only cryptographic proof is shared.
               </p>
