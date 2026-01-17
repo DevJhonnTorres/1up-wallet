@@ -1,6 +1,22 @@
 import { Network } from '../types/index';
 import { getNetworkLogoUrl, getTokenLogoUrl } from '../utils/tokenUtils';
 
+// RPC URL getters - using functions to ensure env vars are read at runtime
+const getRpcUrl = (chainId: number): string => {
+  switch (chainId) {
+    case 1:
+      return process.env.NEXT_PUBLIC_MAINNET_RPC_URL || 'https://eth.llamarpc.com';
+    case 8453:
+      return process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org';
+    case 10:
+      return process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL || 'https://mainnet.optimism.io';
+    case 130:
+      return process.env.NEXT_PUBLIC_UNICHAIN_RPC_URL || 'https://rpc.unichain.org';
+    default:
+      return process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org';
+  }
+};
+
 // Ethereum Mainnet configuration
 export const ETHEREUM: Network = {
   id: 1,
@@ -8,7 +24,7 @@ export const ETHEREUM: Network = {
   shortName: 'Ethereum',
   icon: getNetworkLogoUrl(1),
   explorerUrl: 'https://etherscan.io',
-  rpcUrl: 'NEXT_PUBLIC_MAINNET_RPC_URL' in process.env ? process.env.NEXT_PUBLIC_MAINNET_RPC_URL! : 'https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID',
+  rpcUrl: getRpcUrl(1),
   testnet: false,
   color: '#627EEA'
 };
@@ -20,7 +36,7 @@ export const BASE: Network = {
   shortName: 'Base',
   icon: getNetworkLogoUrl(8453),
   explorerUrl: 'https://basescan.org',
-  rpcUrl: 'NEXT_PUBLIC_BASE_RPC_URL' in process.env ? process.env.NEXT_PUBLIC_BASE_RPC_URL! : 'https://mainnet.base.org',
+  rpcUrl: getRpcUrl(8453),
   testnet: false,
   color: '#0052FF'
 };
@@ -32,7 +48,7 @@ export const OPTIMISM: Network = {
   shortName: 'Optimism',
   icon: getNetworkLogoUrl(10),
   explorerUrl: 'https://optimistic.etherscan.io',
-  rpcUrl: 'NEXT_PUBLIC_OPTIMISM_RPC_URL' in process.env ? process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL! : 'https://mainnet.optimism.io',
+  rpcUrl: getRpcUrl(10),
   testnet: false,
   color: '#FF0B51'
 };
@@ -44,7 +60,7 @@ export const UNICHAIN: Network = {
   shortName: 'Unichain',
   icon: getNetworkLogoUrl(130),
   explorerUrl: 'https://unichain.blockscout.com',
-  rpcUrl: 'NEXT_PUBLIC_UNICHAIN_RPC_URL' in process.env ? process.env.NEXT_PUBLIC_UNICHAIN_RPC_URL! : 'https://rpc.unichain.org',
+  rpcUrl: getRpcUrl(130),
   testnet: false,
   color: '#00FF00'
 };
@@ -150,9 +166,7 @@ export const TOKENS = {
   }
 };
 
-// Helper function to get RPC URL by chain ID
+// Helper function to get RPC URL by chain ID - always reads fresh from env
 export function getChainRpc(chainId: number): string {
-  const networks = [ETHEREUM, BASE, OPTIMISM, UNICHAIN];
-  const network = networks.find(n => n.id === chainId);
-  return network?.rpcUrl || BASE.rpcUrl; // Default to Base
+  return getRpcUrl(chainId);
 }

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import Image from 'next/image';
+import Link from 'next/link';
 import { Wallet, TokenBalance } from '../../types/index';
 import Button from '../../components/shared/Button';
 import Loading from '../../components/shared/Loading';
-import { getTokenLogoUrl, getNetworkLogoUrl, formatTokenBalance } from '../../utils/tokenUtils';
-import { usePrivy, useWallets, useSendTransaction } from '@privy-io/react-auth';
+import { getTokenLogoUrl, formatTokenBalance } from '../../utils/tokenUtils';
+import { usePrivy, useWallets, useSendTransaction, useFundWallet } from '@privy-io/react-auth';
 import SendTokenModal from './SendTokenModal';
 import QRScanner from './QRScanner';
 import { parseUnits, encodeFunctionData } from 'viem';
+import { base, mainnet, optimism } from 'viem/chains';
 import { useTokenPrices } from '../../hooks/useTokenPrices';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 
@@ -29,18 +30,25 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   const { exportWallet } = usePrivy();
   const { wallets } = useWallets();
   const { sendTransaction } = useSendTransaction();
+  const { fundWallet } = useFundWallet();
   const { getPriceForToken } = useTokenPrices();
   const { wallet: activeWallet, canUseSponsoredGas, isEmbeddedWallet, walletClientType } = useActiveWallet();
-  
+
   // States for send token modal
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [selectedToken, setSelectedToken] = useState<'ETH' | 'USDC'>('ETH');
   const [isSendingTx, setIsSendingTx] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
-  
+
+  // Tab state for Tokens/Collectibles
+  const [activeTab, setActiveTab] = useState<'tokens' | 'collectibles'>('tokens');
+
   // New state for QR scanner
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [scannedAddress, setScannedAddress] = useState<string | null>(null);
+
+  // Fund wallet state
+  const [isFunding, setIsFunding] = useState(false);
   
   // Get the actual wallet instance from Privy's useWallets hook
   const privyWallet = wallets?.find(w => w.address.toLowerCase() === wallet.address.toLowerCase());
@@ -52,6 +60,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   const ethLogoUrl = getTokenLogoUrl('ETH');
   const usdcLogoUrl = getTokenLogoUrl('USDC');
   const eurclogoUrl = getTokenLogoUrl('EURC');
+  const usdtLogoUrl = getTokenLogoUrl('USDT');
   
   // Explorer mapping per chain
   const explorerBase = (() => {
@@ -72,10 +81,14 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   // Calculate USD values
   const ethPrice = getPriceForToken('ETH');
   const usdcPrice = getPriceForToken('USDC');
-  
+  const usdtPrice = getPriceForToken('USDT');
+  const eurcPrice = getPriceForToken('EURC');
+
   const ethValueUsd = parseFloat(balances.ethBalance) * ethPrice.price;
   const usdcValueUsd = parseFloat(balances.uscBalance) * usdcPrice.price;
-  const totalValueUsd = ethValueUsd + usdcValueUsd;
+  const usdtValueUsd = parseFloat(balances.usdtBalance || '0') * usdtPrice.price;
+  const eurcValueUsd = parseFloat(balances.eurcBalance || '0') * eurcPrice.price;
+  const totalValueUsd = ethValueUsd + usdcValueUsd + usdtValueUsd + eurcValueUsd;
   
   // Format USD values
   const formatUsd = (value: number) => {
@@ -95,7 +108,32 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
       console.error("Error exporting wallet:", error);
     }
   };
-  
+
+  // Get the viem chain object for current chainId
+  const getViemChain = () => {
+    switch (chainId) {
+      case 1: return mainnet;
+      case 10: return optimism;
+      default: return base;
+    }
+  };
+
+  // Handle fund wallet with Apple Pay / Google Pay
+  const handleFundWallet = async () => {
+    if (!wallet.address || !isEmbeddedWallet) return;
+
+    setIsFunding(true);
+    try {
+      // Privy fundWallet API - opens modal for Apple Pay / Google Pay
+      // Chain and asset are configured in the Privy Dashboard
+      await fundWallet({ address: wallet.address });
+    } catch (error) {
+      console.error('Error funding wallet:', error);
+    } finally {
+      setIsFunding(false);
+    }
+  };
+
   // Handle opening the send token modal
   const openSendModal = (token: 'ETH' | 'USDC') => {
     setSelectedToken(token);
@@ -243,108 +281,171 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     setIsQRScannerOpen(true);
   };
   
+  // Format address for mobile (truncated)
+  const formatAddress = (address: string, isMobile: boolean = false) => {
+    if (isMobile && address.length > 20) {
+      return `${address.slice(0, 8)}...${address.slice(-6)}`;
+    }
+    return address;
+  };
+
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(wallet.address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="wallet-info">
-      <h3>Your Wallet</h3>
-      
-      <div className="wallet-address-container">
-        <div className="qr-code-container">
-          <div className="qr-code">
-            <Image src={qrCodeUrl} alt="Wallet Address QR Code" width={150} height={150} unoptimized />
-          </div>
-          <p className="qr-help">Scan to view or send funds</p>
+      {/* Total Portfolio Value - Hero Section */}
+      <div className="portfolio-hero">
+        <div className="portfolio-value-section">
+          <span className="portfolio-label">Total Balance</span>
+          <div className="portfolio-amount">{formatUsd(totalValueUsd)}</div>
         </div>
-        <div className="address-details">
-          <div className="address-header">
-            <h4>Wallet Address</h4>
-            <Button 
-              onClick={handleExportWallet}
-              size="small" 
-              variant="outline"
-              className="export-button"
+
+        {/* Quick Actions - Mobile First */}
+        {isEmbeddedWallet && (
+          <div className="quick-actions">
+            <button
+              className="quick-action-btn fund-btn"
+              onClick={handleFundWallet}
+              disabled={isFunding}
             >
-              Export Wallet
-            </Button>
+              <div className="action-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <line x1="2" y1="10" x2="22" y2="10" />
+                </svg>
+              </div>
+              <span>{isFunding ? 'Loading...' : 'Buy'}</span>
+            </button>
+            <button
+              className="quick-action-btn send-btn"
+              onClick={() => openSendModal('USDC')}
+            >
+              <div className="action-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 19V5M5 12l7-7 7 7" />
+                </svg>
+              </div>
+              <span>Send</span>
+            </button>
+            <button
+              className="quick-action-btn receive-btn"
+              onClick={openQRScanner}
+            >
+              <div className="action-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 5v14M5 12l7 7 7-7" />
+                </svg>
+              </div>
+              <span>Receive</span>
+            </button>
+            <button
+              className="quick-action-btn refresh-btn"
+              onClick={onRefresh}
+              disabled={isLoading}
+            >
+              <div className="action-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={isLoading ? 'spinning' : ''}>
+                  <path d="M23 4v6h-6M1 20v-6h6" />
+                  <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+                </svg>
+              </div>
+              <span>Refresh</span>
+            </button>
           </div>
-          
-          <div className="address-display">
-            <p className="wallet-address">{wallet.address}</p>
-            <div className="address-actions">
-              <button 
-                className="copy-button"
-                onClick={() => {
-                  navigator.clipboard.writeText(wallet.address);
-                }}
-              >
-                Copy
-              </button>
-              {explorerBase && (
-                <a 
-                  href={`${explorerBase}/address/${wallet.address}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="view-button"
-                >
-                  View on Explorer
-                </a>
-              )}
+        )}
+      </div>
+
+      {/* Wallet Address Card - Compact */}
+      <div className="wallet-address-card">
+        <div className="address-row">
+          <div className="address-info">
+            <div className="qr-code-mini">
+              <img src={qrCodeUrl} alt="QR" />
             </div>
+            <div className="address-text">
+              <span className="address-label">Wallet Address</span>
+              <span className="address-value">{formatAddress(wallet.address, true)}</span>
+            </div>
+          </div>
+          <div className="address-actions-row">
+            <button className="action-icon-btn" onClick={handleCopy} title="Copy address">
+              {copied ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                </svg>
+              )}
+            </button>
+            {explorerBase && (
+              <a
+                href={`${explorerBase}/address/${wallet.address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="action-icon-btn"
+                title="View on explorer"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+              </a>
+            )}
+            {isEmbeddedWallet && (
+              <button className="action-icon-btn" onClick={handleExportWallet} title="Export wallet">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>
-      
+
       <div className="balance-section">
+
         <div className="balance-header">
-          <h4>Balances</h4>
-          <div className="balance-actions">
-            <Button
-              onClick={onRefresh}
-              size="small"
-              variant="outline"
-              className="refresh-button"
-              disabled={isLoading}
-            >
-              Refresh
-            </Button>
-            <Button
-              onClick={openQRScanner}
-              size="small"
-              variant="outline"
-              className="scan-button"
-            >
-              Scan Wallet
-            </Button>
-          </div>
+          <h4>Assets</h4>
+        </div>
+
+        {/* Tabs for Tokens/Collectibles */}
+        <div className="wallet-tabs">
+          <button
+            className={`wallet-tab ${activeTab === 'tokens' ? 'active' : ''}`}
+            onClick={() => setActiveTab('tokens')}
+          >
+            Tokens
+          </button>
+          <button
+            className={`wallet-tab ${activeTab === 'collectibles' ? 'active' : ''}`}
+            onClick={() => setActiveTab('collectibles')}
+          >
+            Collectibles
+          </button>
         </div>
 
         {isLoading ? (
           <div className="loading-balances">
             <Loading size="small" text="Loading balances..." />
           </div>
-        ) : (
+        ) : activeTab === 'tokens' ? (
           <div className="token-list">
-             {/* Total Balance - Featured */}
-            <div className="total-balance-featured">
-              <div className="total-balance-content">
-                <div className="total-label">Total Portfolio Value</div>
-                <div className="total-amount-large">{formatUsd(totalValueUsd)}</div>
-              </div>
-              <div className="portfolio-breakdown">
-                <span className="breakdown-item">
-                  <Image src={ethLogoUrl} alt="ETH" width={16} height={16} className="breakdown-icon" unoptimized />
-                  {formatUsd(ethValueUsd)}
-                </span>
-                <span className="breakdown-divider">+</span>
-                <span className="breakdown-item">
-                  <Image src={usdcLogoUrl} alt="USDC" width={16} height={16} className="breakdown-icon" unoptimized />
-                  {formatUsd(usdcValueUsd)}
-                </span>
-              </div>
-            </div>
             {/* ETH Balance */}
-            <div className="token-item">
+            <div className="token-item" onClick={() => openSendModal('ETH')}>
               <div className="token-info">
-                <Image src={ethLogoUrl} alt="ETH" width={40} height={40} className="token-icon" unoptimized />
+                <img src={ethLogoUrl} alt="ETH" className="token-icon" />
                 <div className="token-details">
                   <span className="token-name">Ethereum</span>
                   <span className="token-symbol">ETH</span>
@@ -354,17 +455,12 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
                 <div className="balance-amount">{formatTokenBalance(balances.ethBalance, 6)}</div>
                 <div className="balance-usd">{formatUsd(ethValueUsd)}</div>
               </div>
-              <div className="token-actions">
-                <Button onClick={() => openSendModal('ETH')} size="small" variant="primary">
-                  Send
-                </Button>
-              </div>
             </div>
-            
+
             {/* USDC Balance */}
-            <div className="token-item">
+            <div className="token-item" onClick={() => openSendModal('USDC')}>
               <div className="token-info">
-                <Image src={usdcLogoUrl} alt="USDC" width={40} height={40} className="token-icon" unoptimized />
+                <img src={usdcLogoUrl} alt="USDC" className="token-icon" />
                 <div className="token-details">
                   <span className="token-name">USD Coin</span>
                   <span className="token-symbol">USDC</span>
@@ -374,15 +470,55 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
                 <div className="balance-amount">{formatTokenBalance(balances.uscBalance, 6)}</div>
                 <div className="balance-usd">{formatUsd(usdcValueUsd)}</div>
               </div>
-              <div className="token-actions">
-                <Button onClick={() => openSendModal('USDC')} size="small" variant="primary">
-                  Send
-                </Button>
+            </div>
+
+            {/* USDT Balance */}
+            <div className="token-item">
+              <div className="token-info">
+                <img src={usdtLogoUrl} alt="USDT" className="token-icon" />
+                <div className="token-details">
+                  <span className="token-name">Tether USD</span>
+                  <span className="token-symbol">USDT</span>
+                </div>
+              </div>
+              <div className="token-balance">
+                <div className="balance-amount">{formatTokenBalance(balances.usdtBalance || '0', 6)}</div>
+                <div className="balance-usd">{formatUsd(usdtValueUsd)}</div>
               </div>
             </div>
 
-            
-
+            {/* EURC Balance */}
+            <div className="token-item">
+              <div className="token-info">
+                <img src={eurclogoUrl} alt="EURC" className="token-icon" />
+                <div className="token-details">
+                  <span className="token-name">Euro Coin</span>
+                  <span className="token-symbol">EURC</span>
+                </div>
+              </div>
+              <div className="token-balance">
+                <div className="balance-amount">{formatTokenBalance(balances.eurcBalance || '0', 6)}</div>
+                <div className="balance-usd">{formatUsd(eurcValueUsd)}</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Collectibles Tab */
+          <div className="collectibles-list">
+            <div className="collectibles-empty">
+              <div className="empty-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="M21 15l-5-5L5 21" />
+                </svg>
+              </div>
+              <h4>No Collectibles Yet</h4>
+              <p>Your NFTs and collectibles will appear here</p>
+              <Link href="/swag" className="browse-swag-link">
+                Browse ETH CALI Swag
+              </Link>
+            </div>
           </div>
         )}
       </div>
@@ -439,323 +575,239 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
       <style jsx>{`
         .wallet-info {
           background: transparent;
-          padding: 1.5rem;
-          border-radius: 8px;
-          margin-top: 1rem;
+          padding: 0;
+          border-radius: 0;
+          margin-top: 0;
           position: relative;
+          max-width: 100%;
         }
-        
-        /* removed network indicator styles */
-        
-        h3 {
-          margin: 0 0 1rem 0;
-          color: #e5e7eb;
-        }
-        
-        .wallet-address-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          margin-bottom: 1.5rem;
-          background: rgba(17, 24, 39, 0.8);
-          border-radius: 12px;
-          border: 1px solid rgba(6, 182, 212, 0.2);
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+
+        /* Portfolio Hero Section */
+        .portfolio-hero {
+          background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(31, 41, 55, 0.95));
+          border-radius: 20px;
           padding: 1.5rem;
+          margin-bottom: 1rem;
+          border: 1px solid rgba(75, 85, 99, 0.3);
         }
-        
-        .qr-code-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          margin-bottom: 1.5rem;
+
+        .portfolio-value-section {
+          text-align: center;
+          margin-bottom: 1.25rem;
         }
-        
-        .qr-code {
-          background: white;
-          padding: 10px;
-          border-radius: 8px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-          border: 1px solid rgba(6, 182, 212, 0.3);
-        }
-        
-        .qr-code img {
+
+        .portfolio-label {
           display: block;
-          width: 150px;
-          height: 150px;
-        }
-        
-        .qr-help {
-          margin: 0.5rem 0 0 0;
-          font-size: 0.85rem;
-          color: #9ca3af;
-        }
-        
-        .address-details {
-          width: 100%;
-        }
-        
-        .address-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 0.75rem;
-        }
-        
-        .address-header h4 {
-          margin: 0;
-          color: #e5e7eb;
-        }
-        
-        .export-button {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.375rem;
-          padding: 0.25rem 0.75rem;
-          border-radius: 6px;
-          font-size: 0.85rem;
-        }
-        
-        .export-icon {
-          font-size: 0.9rem;
-        }
-        
-        .address-display {
-          position: relative;
-          display: flex;
-          align-items: center;
-          background: rgba(31, 41, 55, 0.8);
-          padding: 0.75rem 1rem;
-          border-radius: 8px;
-          border: 1px solid rgba(6, 182, 212, 0.2);
-          margin-bottom: 0.75rem;
-        }
-        
-        .wallet-address {
-          flex: 1;
-          font-family: monospace;
-          overflow-wrap: break-word;
-          font-size: 0.9rem;
-          color: #06b6d4;
-          user-select: all;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        
-        .copy-button {
-          background: rgba(6, 182, 212, 0.1);
-          border: 1px solid rgba(6, 182, 212, 0.3);
-          cursor: pointer;
-          padding: 0.5rem 1rem;
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #06b6d4;
-          transition: all 0.2s;
-          font-size: 0.85rem;
-        }
-        
-        .copy-button:hover {
-          background-color: rgba(6, 182, 212, 0.2);
-        }
-        
-        .view-button {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.375rem;
-          color: #a855f7;
-          text-decoration: none;
-          font-size: 0.85rem;
-          padding: 0.5rem 1rem;
-          border: 1px solid rgba(168, 85, 247, 0.3);
-          border-radius: 6px;
-          background: rgba(168, 85, 247, 0.1);
-          transition: all 0.2s;
-        }
-        
-        .view-button:hover {
-          background: rgba(168, 85, 247, 0.2);
-        }
-        
-        .address-actions {
-          display: flex;
-          gap: 1rem;
-        }
-        
-        .balance-section {
-          margin-top: 2rem;
-        }
-        
-        .balance-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 1rem;
-        }
-        
-        .balance-header h4 {
-          margin: 0;
-          color: #e5e7eb;
-        }
-        
-        .balance-actions {
-          display: flex;
-          gap: 8px;
-        }
-        
-        .refresh-button {
-          width: 100%;
-          border-radius: 8px;
-          font-weight: 500;
-          margin-top: 0.5rem;
-        }
-        
-        .scan-button {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-        
-        .loading-balances {
-          margin-top: 1rem;
-          text-align: center;
-          color: #9ca3af;
-        }
-        
-        .token-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-        
-        .token-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem;
-          background: rgba(17, 24, 39, 0.8);
-          border-radius: 12px;
-          border: 1px solid rgba(6, 182, 212, 0.2);
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-          transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-        }
-        
-        .token-item:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
-          border-color: rgba(6, 182, 212, 0.4);
-        }
-        
-        .token-info {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-        
-        .token-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          object-fit: contain;
-        }
-        
-        .token-details {
-          display: flex;
-          flex-direction: column;
-        }
-        
-        .token-name {
-          font-weight: 500;
-          color: #e5e7eb;
-        }
-        
-        .token-symbol {
-          font-size: 0.8rem;
-          color: #9ca3af;
-        }
-        
-        .token-balance {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-        }
-        
-        .balance-amount {
-          font-weight: 600;
-          font-size: 1.1rem;
-          color: #06b6d4;
-        }
-        
-        .balance-usd {
-          font-size: 0.85rem;
-          color: #9ca3af;
-          margin-top: 0.2rem;
-        }
-        
-        .token-actions {
-          display: flex;
-          gap: 0.75rem;
-        }
-        
-        .total-balance-featured {
-          background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
-          border: 1px solid rgba(6, 182, 212, 0.4);
-          border-radius: 16px;
-          padding: 1.5rem;
-          margin-bottom: 1rem;
-          text-align: center;
-        }
-        
-        .total-balance-content {
-          margin-bottom: 1rem;
-        }
-        
-        .total-label {
-          font-size: 0.875rem;
+          font-size: 0.75rem;
           font-weight: 500;
           color: #9ca3af;
           text-transform: uppercase;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.1em;
           margin-bottom: 0.5rem;
         }
-        
-        .total-amount-large {
-          font-weight: 800;
-          font-size: 2.5rem;
+
+        .portfolio-amount {
+          font-size: 2.25rem;
+          font-weight: 700;
           background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
           line-height: 1.2;
         }
-        
-        .portfolio-breakdown {
+
+        /* Wallet Address Card - Compact */
+        .wallet-address-card {
+          background: rgba(17, 24, 39, 0.8);
+          border-radius: 12px;
+          padding: 0.875rem 1rem;
+          margin-bottom: 1.25rem;
+          border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+
+        .address-row {
           display: flex;
-          justify-content: center;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.75rem;
+        }
+
+        .address-info {
+          display: flex;
           align-items: center;
           gap: 0.75rem;
-          padding-top: 1rem;
-          border-top: 1px solid rgba(6, 182, 212, 0.2);
+          flex: 1;
+          min-width: 0;
         }
-        
-        .breakdown-item {
+
+        .qr-code-mini {
+          width: 44px;
+          height: 44px;
+          background: white;
+          border-radius: 8px;
+          padding: 3px;
+          flex-shrink: 0;
+        }
+
+        .qr-code-mini img {
+          width: 100%;
+          height: 100%;
+          display: block;
+        }
+
+        .address-text {
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+
+        .address-label {
+          font-size: 0.7rem;
+          font-weight: 500;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .address-value {
+          font-family: 'SF Mono', 'Menlo', monospace;
+          font-size: 0.875rem;
+          color: #06b6d4;
+          font-weight: 500;
+        }
+
+        .address-actions-row {
+          display: flex;
+          gap: 0.5rem;
+          flex-shrink: 0;
+        }
+
+        .action-icon-btn {
           display: flex;
           align-items: center;
-          gap: 0.375rem;
-          font-size: 0.875rem;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          background: rgba(55, 65, 81, 0.5);
+          border: 1px solid rgba(75, 85, 99, 0.4);
           color: #9ca3af;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-decoration: none;
         }
-        
-        .breakdown-icon {
+
+        .action-icon-btn:hover {
+          background: rgba(75, 85, 99, 0.6);
+          color: #e5e7eb;
+          border-color: rgba(107, 114, 128, 0.6);
+        }
+
+        .action-icon-btn svg {
           width: 16px;
           height: 16px;
-          border-radius: 50%;
         }
         
-        .breakdown-divider {
-          color: #4b5563;
+        .balance-section {
+          margin-top: 0;
+        }
+
+        .balance-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 0.75rem;
+          padding: 0 0.25rem;
+        }
+
+        .balance-header h4 {
+          margin: 0;
+          color: #9ca3af;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .loading-balances {
+          padding: 2rem;
+          text-align: center;
+          color: #9ca3af;
+        }
+
+        .token-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .token-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.875rem 1rem;
+          background: rgba(17, 24, 39, 0.6);
+          border-radius: 12px;
+          border: 1px solid rgba(75, 85, 99, 0.25);
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .token-item:hover {
+          background: rgba(31, 41, 55, 0.8);
+          border-color: rgba(107, 114, 128, 0.4);
+        }
+
+        .token-item:active {
+          transform: scale(0.99);
+        }
+
+        .token-info {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .token-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          object-fit: contain;
+        }
+
+        .token-details {
+          display: flex;
+          flex-direction: column;
+          gap: 0.125rem;
+        }
+
+        .token-name {
           font-weight: 500;
+          font-size: 0.9375rem;
+          color: #e5e7eb;
+        }
+
+        .token-symbol {
+          font-size: 0.75rem;
+          color: #6b7280;
+        }
+
+        .token-balance {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 0.125rem;
+        }
+
+        .balance-amount {
+          font-weight: 600;
+          font-size: 0.9375rem;
+          color: #e5e7eb;
+        }
+
+        .balance-usd {
+          font-size: 0.75rem;
+          color: #6b7280;
         }
         
         .transaction-receipt {
@@ -843,95 +895,296 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           font-size: 0.9rem;
         }
         
-        @media (min-width: 768px) {
-          .wallet-address-container {
-            flex-direction: row;
-            align-items: flex-start;
+        /* Mobile-first responsive design */
+        @media (max-width: 480px) {
+          .portfolio-hero {
+            padding: 1.25rem;
+            border-radius: 16px;
           }
-          
-          .qr-code-container {
-            margin-right: 1.5rem;
-            margin-bottom: 0;
+
+          .portfolio-amount {
+            font-size: 1.875rem;
           }
-          
-          .address-details {
-            flex: 1;
+
+          .quick-action-btn .action-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
           }
-        }
-        
-        @media (max-width: 768px) {
-          .wallet-address-container {
-            flex-direction: column;
-            align-items: center;
+
+          .quick-action-btn svg {
+            width: 18px;
+            height: 18px;
           }
-          
-          .qr-code-container {
-            margin-bottom: 1.5rem;
+
+          .wallet-address-card {
+            padding: 0.75rem;
           }
-          
-          .address-details {
-            width: 100%;
+
+          .qr-code-mini {
+            width: 38px;
+            height: 38px;
           }
-          
+
+          .address-value {
+            font-size: 0.8125rem;
+          }
+
+          .action-icon-btn {
+            width: 32px;
+            height: 32px;
+          }
+
+          .action-icon-btn svg {
+            width: 14px;
+            height: 14px;
+          }
+
           .token-item {
             padding: 0.75rem;
           }
-          
+
           .token-icon {
             width: 32px;
             height: 32px;
           }
-          
+
           .token-name {
-            font-size: 0.9rem;
+            font-size: 0.875rem;
           }
-          
+
           .balance-amount {
-            font-size: 1rem;
+            font-size: 0.875rem;
           }
-          
-          .balance-usd {
-            font-size: 0.8rem;
+
+          .wallet-tab {
+            padding: 0.625rem 0.75rem;
+            font-size: 0.8125rem;
           }
         }
-        
-        @media (max-width: 480px) {
-          .balance-actions {
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 6px;
+
+        @media (min-width: 768px) {
+          .portfolio-hero {
+            padding: 2rem;
           }
-          
-          .scan-button,
-          .refresh-button {
-            font-size: 0.75rem;
-            padding: 4px 8px;
+
+          .portfolio-amount {
+            font-size: 2.75rem;
           }
-          
-          .token-item {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.75rem;
+
+          .quick-action-btn .action-icon {
+            width: 52px;
+            height: 52px;
           }
-          
-          .token-info {
-            width: 100%;
+
+          .quick-action-btn svg {
+            width: 24px;
+            height: 24px;
           }
-          
-          .token-balance {
-            width: 100%;
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: center;
+
+          .wallet-address-card {
+            padding: 1rem 1.25rem;
           }
-          
-          .token-actions {
-            width: 100%;
+
+          .qr-code-mini {
+            width: 52px;
+            height: 52px;
           }
-          
-          .token-actions button {
-            width: 100%;
+
+          .token-icon {
+            width: 40px;
+            height: 40px;
           }
+        }
+
+        /* Wallet Tabs */
+        .wallet-tabs {
+          display: flex;
+          gap: 0;
+          margin-bottom: 1.5rem;
+          background: rgba(17, 24, 39, 0.6);
+          border-radius: 8px;
+          padding: 4px;
+          border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+
+        .wallet-tab {
+          flex: 1;
+          padding: 0.75rem 1rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #9ca3af;
+          background: transparent;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .wallet-tab:hover {
+          color: #e5e7eb;
+          background: rgba(75, 85, 99, 0.3);
+        }
+
+        .wallet-tab.active {
+          color: #06b6d4;
+          background: rgba(6, 182, 212, 0.15);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Collectibles Section */
+        .collectibles-list {
+          min-height: 200px;
+        }
+
+        .collectibles-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 3rem 1.5rem;
+          text-align: center;
+          background: rgba(17, 24, 39, 0.4);
+          border-radius: 12px;
+          border: 1px dashed rgba(75, 85, 99, 0.5);
+        }
+
+        .collectibles-empty .empty-icon {
+          color: #4b5563;
+          margin-bottom: 1rem;
+        }
+
+        .collectibles-empty h4 {
+          color: #e5e7eb;
+          font-size: 1.125rem;
+          font-weight: 600;
+          margin: 0 0 0.5rem 0;
+        }
+
+        .collectibles-empty p {
+          color: #9ca3af;
+          font-size: 0.875rem;
+          margin: 0 0 1.5rem 0;
+        }
+
+        .browse-swag-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1.5rem;
+          background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2));
+          border: 1px solid rgba(6, 182, 212, 0.4);
+          border-radius: 8px;
+          color: #06b6d4;
+          font-size: 0.875rem;
+          font-weight: 600;
+          text-decoration: none;
+          transition: all 0.2s ease;
+        }
+
+        /* Quick Actions - Professional Mobile UI */
+        .quick-actions {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 0.75rem;
+        }
+
+        .quick-action-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 0.375rem;
+          padding: 0.75rem 0.5rem;
+          background: transparent;
+          border: none;
+          border-radius: 12px;
+          color: #9ca3af;
+          font-size: 0.6875rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .quick-action-btn:hover:not(:disabled) {
+          color: #e5e7eb;
+        }
+
+        .quick-action-btn:active:not(:disabled) {
+          transform: scale(0.95);
+        }
+
+        .quick-action-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .quick-action-btn .action-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 44px;
+          height: 44px;
+          border-radius: 14px;
+          transition: all 0.15s ease;
+        }
+
+        .quick-action-btn svg {
+          width: 20px;
+          height: 20px;
+          stroke-width: 2;
+        }
+
+        .quick-action-btn.fund-btn .action-icon {
+          background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.25));
+          color: #4ade80;
+        }
+
+        .quick-action-btn.fund-btn:hover:not(:disabled) .action-icon {
+          background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.35));
+        }
+
+        .quick-action-btn.send-btn .action-icon {
+          background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(59, 130, 246, 0.25));
+          color: #22d3ee;
+        }
+
+        .quick-action-btn.send-btn:hover:not(:disabled) .action-icon {
+          background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(59, 130, 246, 0.35));
+        }
+
+        .quick-action-btn.receive-btn .action-icon {
+          background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.25));
+          color: #a78bfa;
+        }
+
+        .quick-action-btn.receive-btn:hover:not(:disabled) .action-icon {
+          background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.35));
+        }
+
+        .quick-action-btn.refresh-btn .action-icon {
+          background: rgba(55, 65, 81, 0.5);
+          color: #9ca3af;
+        }
+
+        .quick-action-btn.refresh-btn:hover:not(:disabled) .action-icon {
+          background: rgba(75, 85, 99, 0.6);
+          color: #e5e7eb;
+        }
+
+        .quick-action-btn.refresh-btn svg.spinning {
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .browse-swag-link:hover {
+          background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(139, 92, 246, 0.3));
+          border-color: rgba(6, 182, 212, 0.6);
+          transform: translateY(-1px);
         }
       `}</style>
     </div>

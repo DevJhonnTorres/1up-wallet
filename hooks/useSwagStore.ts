@@ -120,16 +120,46 @@ export function useVariantMetadata(tokenId: bigint) {
     queryKey: ['swag-metadata', chainId, tokenIdStr, gatewayUrl],
     queryFn: async () => {
       if (!gatewayUrl) return null;
-      const response = await fetch(gatewayUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch metadata: ${response.status}`);
+
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      try {
+        const response = await fetch(gatewayUrl, {
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch metadata: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        // Validate response has required fields
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid metadata format');
+        }
+
+        return data;
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          throw new Error('Request timeout - IPFS gateway took too long');
+        }
+        throw err;
       }
-      return response.json();
     },
     enabled: Boolean(gatewayUrl),
     staleTime: 1000 * 60 * 30,
     gcTime: 1000 * 60 * 60,
-    retry: 2,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
 
   return {
@@ -175,8 +205,10 @@ export function useBuyVariant() {
 
     const totalPrice = BigInt(Math.round(price * quantity * 1_000_000));
 
-    // Create public client with correct chain RPC
+    // Create public client with correct chain RPC from env vars
     const rpcUrl = getChainRpc(chainId);
+    console.log(`[Swag Buy] Using RPC for chain ${chainId}:`, rpcUrl.includes('infura') ? 'Infura' : rpcUrl.substring(0, 30) + '...');
+
     const publicClient = createPublicClient({
       transport: http(rpcUrl),
     });

@@ -1,20 +1,22 @@
 import { TokenBalance } from '../types/index';
 
 // CoinGecko IDs for tokens
-export const COINGECKO_IDS = {
+export const COINGECKO_IDS: Record<string, string> = {
   ETH: 'ethereum',
   USDC: 'usd-coin',
-  EURC: 'euro-coin' // Circle's EURC
+  EURC: 'euro-coin',
+  USDT: 'tether'
 };
 
 // Base URL for CoinGecko images
 const COINGECKO_IMAGE_URL = 'https://assets.coingecko.com/coins/images';
 
 // Fallback images in case CoinGecko fails
-const FALLBACK_IMAGES = {
+const FALLBACK_IMAGES: Record<string, string> = {
   ETH: '/images/ethereum.png',
   USDC: '/images/usdc.png',
   EURC: '/images/eurc.png',
+  USDT: '/images/usdt.png',
   DEFAULT: '/images/token-default.png'
 };
 
@@ -25,15 +27,16 @@ const FALLBACK_IMAGES = {
  */
 export function getTokenLogoUrl(tokenSymbol: string): string {
   const symbol = tokenSymbol.toUpperCase();
-  
+
   switch (symbol) {
     case 'ETH':
       return `${COINGECKO_IMAGE_URL}/279/large/ethereum.png`;
     case 'USDC':
       return `${COINGECKO_IMAGE_URL}/6319/large/USD_Coin_icon.png`;
     case 'EURC':
-      // EURC on CoinGecko: https://www.coingecko.com/en/coins/euro-coin
       return `${COINGECKO_IMAGE_URL}/26045/large/euro-coin.png`;
+    case 'USDT':
+      return `${COINGECKO_IMAGE_URL}/325/large/Tether.png`;
     default:
       return FALLBACK_IMAGES[symbol] || FALLBACK_IMAGES.DEFAULT;
   }

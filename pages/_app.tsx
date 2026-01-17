@@ -52,17 +52,18 @@ function MyApp({ Component, pageProps }: AppProps) {
       <PrivyProvider
         appId={PRIVY_APP_ID}
         config={{
-          loginMethods: ['email', 'passkey', 'wallet'],
+          // Focus on embedded wallets only for gasless experience
+          // Users login with email/passkey and get a Privy embedded wallet with gas sponsorship
+          loginMethods: ['email', 'passkey'],
           appearance: {
             theme: 'dark',
-            accentColor: '#4B66F3',
+            accentColor: '#06b6d4',
             logo: '/logoethcali.png',
             walletChainType: 'ethereum-only',
-            walletList: ['detected_wallets', 'metamask', 'coinbase_wallet', 'rainbow', 'wallet_connect'],
           },
           embeddedWallets: {
             ethereum: {
-              createOnLogin: 'users-without-wallets',
+              createOnLogin: 'all-users', // All users get an embedded wallet for gasless txns
             },
             showWalletUIs: true,
           },
