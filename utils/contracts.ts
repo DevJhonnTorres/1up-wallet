@@ -155,7 +155,8 @@ export async function getTokenIdByAddress(chainId: number, userAddress: string):
     if (events && events.length > 0) {
       // Get the most recent tokenId
       const latestEvent = events[events.length - 1];
-      return latestEvent.args.tokenId as bigint;
+      const args = latestEvent.args as any;
+      return args?.tokenId ? BigInt(args.tokenId) : null;
     }
 
     return null;

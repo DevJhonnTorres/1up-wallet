@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { QRCodeSVG } from 'qrcode.react';
 import { useWallets, useSendTransaction } from '@privy-io/react-auth';
-import { encodeFunctionData, createPublicClient, http, waitForTransactionReceipt, decodeEventLog } from 'viem';
+import { encodeFunctionData, createPublicClient, http, decodeEventLog } from 'viem';
 import {
   hasNFTByAddress,
   hasNFT,
@@ -212,7 +212,7 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
           transport: http(rpcUrl),
         });
         
-        const receipt = await waitForTransactionReceipt(client, {
+        const receipt = await client.waitForTransactionReceipt({
           hash: result.hash as `0x${string}`,
         });
         
@@ -449,17 +449,88 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
     );
   }
 
-  // Already has NFT
+  // Already has NFT - Show NFT Details
   if (alreadyHasNFT && status === 'minted' && !mintTxHash) {
     return (
       <div className="bg-black/60 border border-green-500/40 rounded-lg p-4 space-y-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-3">
           <div className="w-3 h-3 bg-green-500 rounded-full shadow-lg shadow-green-500/50"></div>
           <div>
             <h2 className="text-sm font-bold text-green-400 font-mono tracking-wide">VERIFIED</h2>
             <p className="text-gray-600 text-[10px] font-mono">{getNetworkName(chainId).toUpperCase()}</p>
           </div>
         </div>
+
+        {/* NFT Image if available */}
+        {nftMetadata?.image && (
+          <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20">
+            <img 
+              src={nftMetadata.image.startsWith('ipfs://') 
+                ? `https://gateway.pinata.cloud/ipfs/${nftMetadata.image.replace('ipfs://', '')}`
+                : nftMetadata.image
+              } 
+              alt="ZKPassport NFT" 
+              className="w-full h-auto"
+            />
+          </div>
+        )}
+
+        {/* NFT Name */}
+        {nftMetadata?.name && (
+          <div className="mb-2">
+            <h3 className="text-sm font-bold text-cyan-400 font-mono">{nftMetadata.name}</h3>
+          </div>
+        )}
+
+        {/* NFT Details */}
+        {(tokenId || tokenData) && (
+          <div className="space-y-1.5 text-[10px] font-mono">
+            {tokenId && (
+              <div className="flex justify-between py-1 border-b border-gray-800">
+                <span className="text-gray-600">token_id</span>
+                <span className="text-cyan-400">#{tokenId.toString()}</span>
+              </div>
+            )}
+            {tokenData && (
+              <>
+                <div className="flex justify-between py-1 border-b border-gray-800">
+                  <span className="text-gray-600">uid</span>
+                  <span className="text-cyan-400">{maskIdentifier(tokenData.uniqueIdentifier)}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-gray-800">
+                  <span className="text-gray-600">face_match</span>
+                  <span className={tokenData.faceMatchPassed ? 'text-green-400' : 'text-gray-600'}>
+                    {tokenData.faceMatchPassed ? 'PASS' : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-gray-600">personhood</span>
+                  <span className={tokenData.personhoodVerified ? 'text-green-400' : 'text-gray-600'}>
+                    {tokenData.personhoodVerified ? 'VERIFIED' : 'FALSE'}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Attributes from metadata */}
+        {nftMetadata?.attributes && nftMetadata.attributes.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-800">
+            <div className="text-[9px] text-gray-600 font-mono mb-2 tracking-wider">ATTRIBUTES</div>
+            <div className="flex flex-wrap gap-1.5">
+              {nftMetadata.attributes.map((attr: any, idx: number) => (
+                <div 
+                  key={idx}
+                  className="px-2 py-1 bg-gray-900/50 border border-gray-800 rounded text-[9px] font-mono"
+                >
+                  <span className="text-gray-500">{attr.trait_type}:</span>{' '}
+                  <span className="text-cyan-400">{attr.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <Link
           href="/faucet"
