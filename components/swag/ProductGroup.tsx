@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useBuyVariant, useVariantMetadata, useVariantState } from '../../hooks/useSwagStore';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
 import type { Swag1155MetadataAttribute } from '../../types/swag';
@@ -153,10 +154,13 @@ export function ProductGroup({ tokenIds, productName }: ProductGroupProps) {
         className="relative aspect-square w-full overflow-hidden bg-slate-900 cursor-pointer"
         onClick={() => setShowDetails(!showDetails)}
       >
-        <img
+        <Image
           src={imageUrl}
           alt={metadata.name}
-          className="h-full w-full object-cover transition-transform group-hover:scale-105"
+          fill
+          className="object-cover transition-transform group-hover:scale-105"
+          sizes="(max-width: 768px) 100vw, 400px"
+          unoptimized={imageUrl.startsWith('https://gateway.pinata.cloud')}
         />
         {/* Quick info overlay */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">

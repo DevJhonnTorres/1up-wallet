@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Image from 'next/image';
 import { useAllVariants, AdminVariant } from '../../hooks/useSwagAdmin';
 import { AdminProductEditModal } from './AdminProductEditModal';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
@@ -75,12 +76,16 @@ export function AdminProductList() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     {variant.metadata?.image && (
-                      <img
-                        src={getIPFSGatewayUrl(variant.metadata.image)}
-                        alt={variant.metadata?.name || 'Product'}
-                        className="h-10 w-10 rounded-lg object-cover border border-slate-700"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                      />
+                      <div className="h-10 w-10 rounded-lg overflow-hidden border border-slate-700">
+                        <Image
+                          src={getIPFSGatewayUrl(variant.metadata.image)}
+                          alt={variant.metadata?.name || 'Product'}
+                          width={40}
+                          height={40}
+                          className="h-full w-full object-cover"
+                          unoptimized
+                        />
+                      </div>
                     )}
                     <div>
                       <p className="text-white font-medium">

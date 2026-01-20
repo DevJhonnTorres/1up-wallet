@@ -10,7 +10,22 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'api.qrserver.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'gateway.pinata.cloud',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.ipfs.w3s.link',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.ipfs.dweb.link',
+      },
     ],
+    // Optimize images for better LCP
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
   },
   reactStrictMode: true,
   // Expose only needed keys; note PRIVY_APP_ID is still sent to client for SDK init
@@ -62,6 +77,9 @@ const nextConfig = {
   compiler: {
     styledComponents: true,
   },
+  eslint: {
+    ignoreDuringBuilds: false,
+  }
 };
 
 module.exports = nextConfig; 

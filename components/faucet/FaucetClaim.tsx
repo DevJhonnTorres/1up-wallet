@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useWallets, useSendTransaction } from '@privy-io/react-auth';
 import {
@@ -37,7 +37,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
 
   const networkName = getNetworkName(chainId);
 
-  const loadFaucetData = async () => {
+  const loadFaucetData = useCallback(async () => {
     if (!userWallet?.address) return;
 
     setIsLoading(true);
@@ -63,11 +63,11 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [chainId, userWallet?.address]);
 
   useEffect(() => {
     loadFaucetData();
-  }, [chainId, userWallet?.address]);
+  }, [loadFaucetData]);
 
   const switchWalletChain = async () => {
     if (!userWallet) return false;

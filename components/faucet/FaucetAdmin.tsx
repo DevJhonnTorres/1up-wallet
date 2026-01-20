@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useWallets } from '@privy-io/react-auth';
 import {
   getFaucetBalance,
@@ -49,7 +49,7 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
   const userIsAdmin = isAdmin(userWallet?.address);
 
   // Load admin data
-  const loadAdminData = async () => {
+  const loadAdminData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -71,11 +71,11 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [chainId]);
 
   useEffect(() => {
     loadAdminData();
-  }, [chainId]);
+  }, [loadAdminData]);
 
   const executeTransaction = async (txData: { to: `0x${string}`; data?: `0x${string}`; value?: bigint }) => {
     if (!userWallet) return;

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Image from 'next/image';
 import { AdminVariant, useUpdateVariant } from '../../hooks/useSwagAdmin';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
 
@@ -54,10 +55,13 @@ export function AdminProductEditModal({ variant, onClose, onSuccess }: AdminProd
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">
             {variant.metadata?.image && (
-              <img
+              <Image
                 src={getIPFSGatewayUrl(variant.metadata.image)}
                 alt={variant.metadata?.name || 'Product'}
+                width={64}
+                height={64}
                 className="h-16 w-16 rounded-lg object-cover border border-slate-700"
+                unoptimized
               />
             )}
             <div>

@@ -448,7 +448,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             {/* ETH Balance */}
             <div className="token-item" onClick={() => openSendModal('ETH')}>
               <div className="token-info">
-                <img src={ethLogoUrl} alt="ETH" className="token-icon" />
+                <Image src={ethLogoUrl} alt="ETH" width={32} height={32} className="token-icon" unoptimized />
                 <div className="token-details">
                   <span className="token-name">Ethereum</span>
                   <span className="token-symbol">ETH</span>
@@ -463,7 +463,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             {/* USDC Balance */}
             <div className="token-item" onClick={() => openSendModal('USDC')}>
               <div className="token-info">
-                <img src={usdcLogoUrl} alt="USDC" className="token-icon" />
+                <Image src={usdcLogoUrl} alt="USDC" width={32} height={32} className="token-icon" unoptimized />
                 <div className="token-details">
                   <span className="token-name">USD Coin</span>
                   <span className="token-symbol">USDC</span>
@@ -478,7 +478,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             {/* USDT Balance */}
             <div className="token-item">
               <div className="token-info">
-                <img src={usdtLogoUrl} alt="USDT" className="token-icon" />
+                <Image src={usdtLogoUrl} alt="USDT" width={32} height={32} className="token-icon" unoptimized />
                 <div className="token-details">
                   <span className="token-name">Tether USD</span>
                   <span className="token-symbol">USDT</span>
@@ -493,7 +493,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             {/* EURC Balance */}
             <div className="token-item">
               <div className="token-info">
-                <img src={eurclogoUrl} alt="EURC" className="token-icon" />
+                <Image src={eurclogoUrl} alt="EURC" width={32} height={32} className="token-icon" unoptimized />
                 <div className="token-details">
                   <span className="token-name">Euro Coin</span>
                   <span className="token-symbol">EURC</span>

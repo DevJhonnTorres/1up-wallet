@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { getChainRpc } from '../config/networks';
@@ -218,10 +219,14 @@ const Navigation: React.FC<NavigationProps> = ({
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <img
+            <Image
               src="/logotethcali.png"
               alt="ETH CALI"
+              width={200}
+              height={96}
               className="h-7 sm:h-8 w-auto"
+              priority
+              unoptimized
             />
           </Link>
 
@@ -264,7 +269,7 @@ const Navigation: React.FC<NavigationProps> = ({
                   {isSwitching ? (
                     <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <img src={currentChain.logo} alt={currentChain.name} className="w-5 h-5 rounded-full object-contain" />
+                    <Image src={currentChain.logo} alt={currentChain.name} width={20} height={20} className="w-5 h-5 rounded-full object-contain" unoptimized />
                   )}
                 </div>
                 <span className="hidden sm:inline">{isSwitching ? 'Switching...' : currentChain.name}</span>
@@ -291,7 +296,7 @@ const Navigation: React.FC<NavigationProps> = ({
                     } ${isSwitching ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                      <img src={chain.logo} alt={chain.name} className="w-5 h-5 rounded-full object-contain" />
+                      <Image src={chain.logo} alt={chain.name} width={20} height={20} className="w-5 h-5 rounded-full object-contain" unoptimized />
                     </div>
                     <span className="flex-1">{chain.name}</span>
                     {displayChainId === chain.id && (

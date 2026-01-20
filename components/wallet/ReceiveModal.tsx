@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 
 interface ReceiveModalProps {
   address: string;
@@ -53,7 +54,15 @@ const ReceiveModal: React.FC<ReceiveModalProps> = ({ address, onClose, onScanQR 
           {/* QR Code - Cypherpunk Style */}
           <div className="qr-section">
             <div className="qr-wrapper">
-              <img src={qrCodeUrl} alt="Wallet QR Code" className="qr-image" />
+              <Image 
+                src={qrCodeUrl} 
+                alt="Wallet QR Code" 
+                width={250}
+                height={250}
+                className="qr-image"
+                priority
+                unoptimized
+              />
             </div>
             <p className="qr-hint">SCAN TO SEND</p>
           </div>

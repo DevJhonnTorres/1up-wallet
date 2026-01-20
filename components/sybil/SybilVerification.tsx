@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { QRCodeSVG } from 'qrcode.react';
 import { useWallets, useSendTransaction } from '@privy-io/react-auth';
 import { encodeFunctionData, createPublicClient, http, decodeEventLog } from 'viem';
@@ -463,14 +464,17 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
 
         {/* NFT Image if available */}
         {nftMetadata?.image && (
-          <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20">
-            <img 
+          <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20 relative aspect-square">
+            <Image 
               src={nftMetadata.image.startsWith('ipfs://') 
                 ? `https://gateway.pinata.cloud/ipfs/${nftMetadata.image.replace('ipfs://', '')}`
                 : nftMetadata.image
               } 
               alt="ZKPassport NFT" 
-              className="w-full h-auto"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 400px"
+              unoptimized={nftMetadata.image.startsWith('ipfs://')}
             />
           </div>
         )}
@@ -735,14 +739,17 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
 
             {/* NFT Image if available */}
             {nftMetadata?.image && (
-              <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20">
-                <img 
+              <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20 relative aspect-square">
+                <Image 
                   src={nftMetadata.image.startsWith('ipfs://') 
                     ? `https://gateway.pinata.cloud/ipfs/${nftMetadata.image.replace('ipfs://', '')}`
                     : nftMetadata.image
                   } 
                   alt="ZKPassport NFT" 
-                  className="w-full h-auto"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 400px"
+                  unoptimized={nftMetadata.image.startsWith('ipfs://')}
                 />
               </div>
             )}

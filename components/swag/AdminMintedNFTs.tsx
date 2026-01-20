@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useAllMintedNFTs, useMarkFulfilled, MintedNFT, RedemptionStatus } from '../../hooks/useSwagAdmin';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
 import { useSwagAddresses } from '../../utils/network';
@@ -175,12 +176,16 @@ export function AdminMintedNFTs() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         {nft.metadata?.image && (
-                          <img
-                            src={getIPFSGatewayUrl(nft.metadata.image)}
-                            alt={nft.metadata?.name || 'NFT'}
-                            className="h-10 w-10 rounded-lg object-cover border border-slate-700"
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                          />
+                          <div className="h-10 w-10 rounded-lg overflow-hidden border border-slate-700">
+                            <Image
+                              src={getIPFSGatewayUrl(nft.metadata.image)}
+                              alt={nft.metadata?.name || 'NFT'}
+                              width={40}
+                              height={40}
+                              className="h-full w-full object-cover"
+                              unoptimized
+                            />
+                          </div>
                         )}
                         <div>
                           <p className="text-white font-medium text-sm">

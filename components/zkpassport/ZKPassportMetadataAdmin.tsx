@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useZKPassportMetadata, useUpdateZKPassportMetadata, ZKPassportMetadata } from '../../hooks/useZKPassportAdmin';
 
 export function ZKPassportMetadataAdmin() {
@@ -97,13 +98,13 @@ export function ZKPassportMetadataAdmin() {
         <div className="flex gap-4">
           <div className="w-24 h-24 rounded-lg border border-slate-600 bg-slate-700 overflow-hidden flex-shrink-0">
             {form.imageURI ? (
-              <img
+              <Image
                 src={form.imageURI}
                 alt="NFT Preview"
+                width={96}
+                height={96}
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
+                unoptimized
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs">

@@ -1,5 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth';
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import { useProductCreation } from '../../hooks/useProductCreation';
 import { GenderOption, ProductFormData, SizeOption } from '../../types/swag';
 
@@ -189,10 +190,13 @@ export function AdminProductForm() {
           {/* Image Preview */}
           {imagePreview && (
             <div className="mt-2 relative">
-              <img 
+              <Image 
                 src={imagePreview} 
                 alt="Preview" 
+                width={400}
+                height={128}
                 className="w-full h-32 object-cover rounded-lg border border-slate-700"
+                unoptimized
               />
               <div className="absolute bottom-2 left-2 right-2 bg-black/70 rounded px-2 py-1">
                 <p className="text-xs text-cyan-400 truncate font-mono">{form.imageUri}</p>

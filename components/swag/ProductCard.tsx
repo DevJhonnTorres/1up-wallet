@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Image from 'next/image';
 import { useBuyVariant, useVariantMetadata, useVariantState } from '../../hooks/useSwagStore';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
 import type { Swag1155MetadataAttribute } from '../../types/swag';
@@ -51,8 +52,15 @@ export function ProductCard({ tokenId }: ProductCardProps) {
 
   return (
     <article className="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-950/60 p-5 shadow-2xl">
-      <div className="aspect-square w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
-        <img src={imageUrl} alt={metadata.name} className="h-full w-full object-cover" />
+      <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
+        <Image 
+          src={imageUrl} 
+          alt={metadata.name} 
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, 300px"
+          unoptimized={imageUrl.startsWith('https://gateway.pinata.cloud')}
+        />
       </div>
       <div className="space-y-2">
         <div className="flex items-center justify-between">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useRouter } from 'next/router';
+import Image from 'next/image';
 import Layout from '../components/shared/Layout';
 import Loading from '../components/shared/Loading';
 import Navigation from '../components/Navigation';
@@ -68,11 +69,16 @@ export default function Home() {
 
             {/* Hero Section */}
             <div className="text-center mb-10 sm:mb-16">
-              <img
-                src="/logotethcali.png"
-                alt="ETH CALI"
-                className="h-16 sm:h-24 mx-auto mb-6 sm:mb-8"
-              />
+              <div className="relative h-16 sm:h-24 mx-auto mb-6 sm:mb-8 w-auto">
+                <Image
+                  src="/logotethcali.png"
+                  alt="ETH CALI"
+                  width={200}
+                  height={96}
+                  className="h-16 sm:h-24 mx-auto"
+                  priority
+                />
+              </div>
               <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-4 sm:mb-6 px-2">
                 ETH CALI WALLET
               </h1>
@@ -158,7 +164,7 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-3 sm:gap-8">
                 <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                    <img src="infraused/privy.png" alt="Privy" className="w-8 h-8 sm:w-10 sm:h-10" />
+                    <Image src="/infraused/privy.png" alt="Privy" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
                   </div>
                   <h3 className="text-base sm:text-xl font-bold text-blue-400 mb-2 sm:mb-3">Privy</h3>
                   <p className="text-gray-500 text-xs sm:text-sm">
@@ -168,7 +174,7 @@ export default function Home() {
 
                 <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                    <img src="infraused/zkpassportid.png" alt="ZK Passport" className="w-8 h-8 sm:w-10 sm:h-10" />
+                    <Image src="/infraused/zkpassportid.png" alt="ZK Passport" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
                   </div>
                   <h3 className="text-base sm:text-xl font-bold text-purple-400 mb-2 sm:mb-3">ZK Passport</h3>
                   <p className="text-gray-500 text-xs sm:text-sm">
@@ -187,10 +193,10 @@ export default function Home() {
                 </p>
               </div>
               <div className="flex justify-center items-center gap-4 sm:gap-12 flex-wrap px-4">
-                <img src="/chains/base logo.svg" alt="Base" className="h-10 sm:h-16" />
-                <img src="/chains/ethereum.png" alt="Ethereum" className="h-10 sm:h-16" />
-                <img src="/chains/op mainnet.png" alt="Optimism" className="h-10 sm:h-16" />
-                <img src="/chains/unichain.png" alt="Unichain" className="h-10 sm:h-16" />
+                <Image src="/chains/base logo.svg" alt="Base" width={64} height={64} className="h-10 sm:h-16 w-auto" unoptimized />
+                <Image src="/chains/ethereum.png" alt="Ethereum" width={64} height={64} className="h-10 sm:h-16 w-auto" unoptimized />
+                <Image src="/chains/op mainnet.png" alt="Optimism" width={64} height={64} className="h-10 sm:h-16 w-auto" unoptimized />
+                <Image src="/chains/unichain.png" alt="Unichain" width={64} height={64} className="h-10 sm:h-16 w-auto" unoptimized />
               </div>
             </div>
           </div>
@@ -202,7 +208,7 @@ export default function Home() {
                 {/* Logo & Social - Full width on mobile */}
                 <div className="col-span-2 sm:col-span-1">
                   <div className="mb-4">
-                    <img src="/logotethcali.png" alt="ETH CALI" className="h-12 sm:h-16 mb-3 sm:mb-4" />
+                    <Image src="/logotethcali.png" alt="ETH CALI" width={200} height={96} className="h-12 sm:h-16 w-auto mb-3 sm:mb-4" unoptimized />
                   </div>
                   <p className="text-gray-400 text-xs sm:text-sm mb-4">El Jardín Infinito del Pacífico Colombiano</p>
                   <div className="flex flex-wrap gap-3 sm:gap-4">
@@ -254,7 +260,7 @@ export default function Home() {
               <div className="border-t border-gray-700 mt-6 sm:mt-8 pt-6 sm:pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <p className="text-gray-400 text-xs sm:text-sm text-center sm:text-left">&copy; 2023 Ethereum Cali. Todos los derechos reservados.</p>
                 <div>
-                  <img src="/branding/Logo_Nodo_CLO_ETH_CO-01.png" alt="Ethereum Colombia Node" className="h-6 sm:h-8" />
+                  <Image src="/branding/Logo_Nodo_CLO_ETH_CO-01.png" alt="Ethereum Colombia Node" width={120} height={32} className="h-6 sm:h-8 w-auto" unoptimized />
                 </div>
               </div>
             </div>
