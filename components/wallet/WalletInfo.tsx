@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Wallet, TokenBalance } from '../../types/index';
@@ -11,6 +12,7 @@ import { parseUnits, encodeFunctionData } from 'viem';
 import { base, mainnet, optimism } from 'viem/chains';
 import { useTokenPrices } from '../../hooks/useTokenPrices';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
+import ReceiveModal from './ReceiveModal';
 
 interface WalletInfoProps {
   wallet: Wallet;
@@ -47,14 +49,14 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [scannedAddress, setScannedAddress] = useState<string | null>(null);
 
+  // State for Receive modal
+  const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
+
   // Fund wallet state
   const [isFunding, setIsFunding] = useState(false);
   
   // Get the actual wallet instance from Privy's useWallets hook
   const privyWallet = wallets?.find(w => w.address.toLowerCase() === wallet.address.toLowerCase());
-  
-  // Generate QR code URL using a public QR code service
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${wallet.address}`;
   
   // Get token logo URLs from CoinGecko
   const ethLogoUrl = getTokenLogoUrl('ETH');
@@ -125,8 +127,13 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     setIsFunding(true);
     try {
       // Privy fundWallet API - opens modal for Apple Pay / Google Pay
-      // Chain and asset are configured in the Privy Dashboard
-      await fundWallet({ address: wallet.address });
+      // Pass address and chain - asset and amount default to Dashboard settings
+      const viemChain = getViemChain();
+      await fundWallet(wallet.address, {
+        chain: viemChain,
+        // asset defaults to 'native-currency' (ETH)
+        // amount defaults to Dashboard configured amount
+      });
     } catch (error) {
       console.error('Error funding wallet:', error);
     } finally {
@@ -335,7 +342,11 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             </button>
             <button
               className="quick-action-btn receive-btn"
-              onClick={openQRScanner}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsReceiveModalOpen(true);
+              }}
             >
               <div className="action-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -365,9 +376,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
       <div className="wallet-address-card">
         <div className="address-row">
           <div className="address-info">
-            <div className="qr-code-mini">
-              <img src={qrCodeUrl} alt="QR" />
-            </div>
             <div className="address-text">
               <span className="address-label">Wallet Address</span>
               <span className="address-value">{formatAddress(wallet.address, true)}</span>
@@ -445,7 +453,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             {/* ETH Balance */}
             <div className="token-item" onClick={() => openSendModal('ETH')}>
               <div className="token-info">
-                <img src={ethLogoUrl} alt="ETH" className="token-icon" />
+                <Image src={ethLogoUrl} alt="ETH" width={32} height={32} className="token-icon" unoptimized />
                 <div className="token-details">
                   <span className="token-name">Ethereum</span>
                   <span className="token-symbol">ETH</span>
@@ -460,7 +468,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             {/* USDC Balance */}
             <div className="token-item" onClick={() => openSendModal('USDC')}>
               <div className="token-info">
-                <img src={usdcLogoUrl} alt="USDC" className="token-icon" />
+                <Image src={usdcLogoUrl} alt="USDC" width={32} height={32} className="token-icon" unoptimized />
                 <div className="token-details">
                   <span className="token-name">USD Coin</span>
                   <span className="token-symbol">USDC</span>
@@ -475,7 +483,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             {/* USDT Balance */}
             <div className="token-item">
               <div className="token-info">
-                <img src={usdtLogoUrl} alt="USDT" className="token-icon" />
+                <Image src={usdtLogoUrl} alt="USDT" width={32} height={32} className="token-icon" unoptimized />
                 <div className="token-details">
                   <span className="token-name">Tether USD</span>
                   <span className="token-symbol">USDT</span>
@@ -490,7 +498,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             {/* EURC Balance */}
             <div className="token-item">
               <div className="token-info">
-                <img src={eurclogoUrl} alt="EURC" className="token-icon" />
+                <Image src={eurclogoUrl} alt="EURC" width={32} height={32} className="token-icon" unoptimized />
                 <div className="token-details">
                   <span className="token-name">Euro Coin</span>
                   <span className="token-symbol">EURC</span>
@@ -569,6 +577,18 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           txHash={txHash}
           initialRecipient={scannedAddress || ''}
           chainId={chainId}
+        />
+      )}
+
+      {/* Receive Modal */}
+      {isReceiveModalOpen && (
+        <ReceiveModal
+          address={wallet.address}
+          onClose={() => setIsReceiveModalOpen(false)}
+          onScanQR={() => {
+            setIsReceiveModalOpen(false);
+            openQRScanner();
+          }}
         />
       )}
       

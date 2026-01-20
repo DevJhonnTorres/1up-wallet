@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useWallets } from '@privy-io/react-auth';
 import {
   getFaucetBalance,
@@ -49,7 +49,7 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
   const userIsAdmin = isAdmin(userWallet?.address);
 
   // Load admin data
-  const loadAdminData = async () => {
+  const loadAdminData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -71,11 +71,11 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [chainId]);
 
   useEffect(() => {
     loadAdminData();
-  }, [chainId]);
+  }, [loadAdminData]);
 
   const executeTransaction = async (txData: { to: `0x${string}`; data?: `0x${string}`; value?: bigint }) => {
     if (!userWallet) return;
@@ -334,13 +334,13 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
       <div className="bg-gray-800/30 rounded-lg p-4 space-y-2">
         <p className="text-xs text-gray-500 font-mono">CONTRACT_ADDRESSES</p>
         <p className="text-xs text-gray-400 font-mono break-all">
-          Faucet: {addresses.FaucetVault}
+          Faucet: {addresses.FaucetManager}
         </p>
         <p className="text-xs text-gray-400 font-mono break-all">
           NFT: {addresses.ZKPassportNFT}
         </p>
         <p className="text-xs text-purple-400 font-mono">
-          💰 All transactions sponsored by Privy
+          All transactions sponsored by Privy
         </p>
       </div>
 
