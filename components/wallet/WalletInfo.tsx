@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Wallet, TokenBalance } from '../../types/index';
 import Button from '../../components/shared/Button';
@@ -58,8 +58,15 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   // Fund wallet state
   const [isFunding, setIsFunding] = useState(false);
 
-  // NFTs for collectibles tab
-  const { data: nfts = [], isLoading: isLoadingNFTs, refetch: refetchNFTs } = useUserNFTs();
+  // NFTs for collectibles tab - pass chainId to ensure correct chain on refresh
+  const { data: nfts = [], isLoading: isLoadingNFTs, refetch: refetchNFTs } = useUserNFTs(chainId);
+
+  // Refetch NFTs when chainId changes
+  useEffect(() => {
+    if (activeTab === 'collectibles' && chainId) {
+      refetchNFTs();
+    }
+  }, [chainId, activeTab, refetchNFTs]);
   
   // Get the actual wallet instance from Privy's useWallets hook
   const privyWallet = wallets?.find(w => w.address.toLowerCase() === wallet.address.toLowerCase());
@@ -475,6 +482,25 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           >
             Collectibles
           </button>
+          {activeTab === 'collectibles' && (
+            <button
+              className="refresh-collectibles-btn"
+              onClick={() => refetchNFTs()}
+              disabled={isLoadingNFTs}
+              title="Refresh collectibles"
+            >
+              <svg 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2"
+                className={isLoadingNFTs ? 'spinning' : ''}
+              >
+                <path d="M23 4v6h-6M1 20v-6h6" />
+                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {isLoading ? (
@@ -566,19 +592,25 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
                 </Link>
               </div>
             ) : (
-              <div className="nfts-grid">
-                {nfts.map((nft) => (
-                  <NFTCard
-                    key={`${nft.tokenId.toString()}-${nft.redemptionStatus}`}
-                    nft={nft}
-                    onRedeemSuccess={() => {
-                      // Refetch NFTs after redemption to update status
-                      setTimeout(() => {
-                        refetchNFTs();
-                      }, 2000);
-                    }}
-                  />
-                ))}
+              <div>
+                <div className="collectibles-summary">
+                  <span className="summary-label">Total Collectibles:</span>
+                  <span className="summary-value">{nfts.length}</span>
+                </div>
+                <div className="nfts-grid">
+                  {nfts.map((nft) => (
+                    <NFTCard
+                      key={`${nft.tokenId.toString()}-${nft.redemptionStatus}`}
+                      nft={nft}
+                      onRedeemSuccess={() => {
+                        // Refetch NFTs after redemption to update status
+                        setTimeout(() => {
+                          refetchNFTs();
+                        }, 2000);
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -1095,6 +1127,40 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
 
+        .refresh-collectibles-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.5rem;
+          margin-left: auto;
+          background: rgba(55, 65, 81, 0.5);
+          border: 1px solid rgba(75, 85, 99, 0.4);
+          border-radius: 6px;
+          color: #9ca3af;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .refresh-collectibles-btn:hover:not(:disabled) {
+          background: rgba(75, 85, 99, 0.6);
+          color: #06b6d4;
+          border-color: rgba(6, 182, 212, 0.4);
+        }
+
+        .refresh-collectibles-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .refresh-collectibles-btn svg {
+          width: 16px;
+          height: 16px;
+        }
+
+        .refresh-collectibles-btn svg.spinning {
+          animation: spin 1s linear infinite;
+        }
+
         /* Collectibles Section */
         .collectibles-list {
           min-height: 200px;
@@ -1137,6 +1203,29 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           margin: 0 0 1.5rem 0;
         }
 
+        .collectibles-summary {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1rem;
+          margin-bottom: 1rem;
+          background: rgba(6, 182, 212, 0.1);
+          border: 1px solid rgba(6, 182, 212, 0.3);
+          border-radius: 8px;
+        }
+
+        .summary-label {
+          font-size: 0.875rem;
+          color: #9ca3af;
+          font-weight: 500;
+        }
+
+        .summary-value {
+          font-size: 1.125rem;
+          color: #06b6d4;
+          font-weight: 700;
+        }
+
         .nfts-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -1146,6 +1235,14 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         @media (max-width: 640px) {
           .nfts-grid {
             grid-template-columns: 1fr;
+          }
+
+          .collectibles-summary {
+            padding: 0.875rem;
+          }
+
+          .summary-value {
+            font-size: 1rem;
           }
         }
 

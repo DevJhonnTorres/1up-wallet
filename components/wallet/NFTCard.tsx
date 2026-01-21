@@ -66,7 +66,10 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
           </div>
           <div className="nft-header-info">
             <h3 className="nft-name">{nft.name}</h3>
-            <div className="nft-balance">Quantity: {nft.balance}</div>
+            <div className="nft-balance">
+              <span className="balance-label">Balance:</span>
+              <span className="balance-value">{nft.balance}</span>
+            </div>
             <div className={`nft-status ${statusColors[nft.redemptionStatus]}`}>
               {statusLabels[nft.redemptionStatus]}
             </div>
@@ -188,8 +191,21 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
         }
 
         .nft-balance {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
           font-size: 0.875rem;
+        }
+
+        .balance-label {
           color: #9ca3af;
+          font-weight: 500;
+        }
+
+        .balance-value {
+          color: #06b6d4;
+          font-weight: 600;
+          font-size: 1rem;
         }
 
         .nft-status {

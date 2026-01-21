@@ -79,6 +79,9 @@ export function AdminMintedNFTs({
         // Still try to find the NFT, but warn about chain mismatch
       }
 
+      // Refetch latest data before opening modal to ensure fresh status
+      refetch();
+
       // Find matching NFT
       const matchingNFT = mintedNFTs.find(
         (nft) =>
@@ -97,7 +100,7 @@ export function AdminMintedNFTs({
         console.warn('[AdminMintedNFTs] No matching NFT found for URL params:', { urlTokenId, urlOwner });
       }
     }
-  }, [urlTokenId, urlOwner, urlChainId, mintedNFTs, currentChainId, fulfillmentModalNft]);
+  }, [urlTokenId, urlOwner, urlChainId, mintedNFTs, currentChainId, fulfillmentModalNft, refetch]);
 
   const handleMarkFulfilled = async (nft: MintedNFT) => {
     const key = `${nft.tokenId.toString()}-${nft.owner}`;
@@ -127,7 +130,7 @@ export function AdminMintedNFTs({
     await handleMarkFulfilled(nft);
   };
 
-  const handleQRScan = (data: string) => {
+  const handleQRScan = async (data: string) => {
     console.log('[AdminMintedNFTs] Received QR scan data:', data);
     
     if (!data || typeof data !== 'string') {
@@ -176,24 +179,35 @@ export function AdminMintedNFTs({
           setScannedData(parsed);
           setIsQRScannerOpen(false);
           
-          // Find matching NFT and show modal
+          // Refetch latest data before showing modal to ensure fresh status
+          await refetch();
+          
+          // Find matching NFT and show modal (data will be fresh after refetch completes)
+          // Note: React Query will update mintedNFTs after refetch, but we need to find from current state
+          // The useEffect will handle opening the modal once fresh data arrives
           const matchingNFT = mintedNFTs.find(
             (nft) =>
               nft.tokenId.toString() === parsed.tokenId.toString() &&
-              nft.owner.toLowerCase() === parsed.owner.toLowerCase() &&
-              nft.redemptionStatus === RedemptionStatus.PendingFulfillment
+              nft.owner.toLowerCase() === parsed.owner.toLowerCase()
           );
 
           if (matchingNFT) {
-            console.log('[AdminMintedNFTs] Found matching NFT from JSON QR, showing modal:', matchingNFT);
-            setFulfillmentModalNft(matchingNFT);
+            if (matchingNFT.redemptionStatus === RedemptionStatus.PendingFulfillment) {
+              console.log('[AdminMintedNFTs] Found matching NFT from JSON QR, showing modal:', matchingNFT);
+              setFulfillmentModalNft(matchingNFT);
+            } else {
+              const statusText = matchingNFT.redemptionStatus === RedemptionStatus.Fulfilled 
+                ? 'already fulfilled' 
+                : 'not yet redeemed';
+              alert(`This NFT is ${statusText}. Current status: ${statusLabels[matchingNFT.redemptionStatus]}`);
+            }
           } else {
             console.warn('[AdminMintedNFTs] No matching NFT found:', { 
               tokenId: parsed.tokenId, 
               owner: parsed.owner,
               availableNFTs: mintedNFTs.length 
             });
-            alert(`NFT with Token ID ${parsed.tokenId} and owner ${parsed.owner.slice(0, 6)}... not found or already fulfilled.`);
+            alert(`NFT with Token ID ${parsed.tokenId} and owner ${parsed.owner.slice(0, 6)}... not found. Please refresh the page.`);
           }
         } else {
           console.warn('[AdminMintedNFTs] Chain/contract mismatch:', {

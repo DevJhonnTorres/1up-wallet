@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createPublicClient, http } from 'viem';
 import { useWallets } from '@privy-io/react-auth';
-import { useSwagAddresses } from '../utils/network';
+import { useSwagAddresses, getChainConfig } from '../utils/network';
 import { getChainRpc } from '../config/networks';
 import { getIPFSGatewayUrl } from '../lib/pinata';
 import Swag1155ABI from '../frontend/abis/Swag1155.json';
@@ -111,10 +111,15 @@ async function fetchTokenMetadata(
 }
 
 // Main hook to fetch user's NFTs
-export function useUserNFTs() {
+export function useUserNFTs(overrideChainId?: number) {
   const { wallets } = useWallets();
   const userAddress = wallets?.[0]?.address;
-  const { chainId, swag1155 } = useSwagAddresses();
+  const swagAddresses = useSwagAddresses();
+  
+  // Use override chainId if provided, otherwise fall back to useSwagAddresses
+  const chainId = overrideChainId || swagAddresses.chainId;
+  const chainConfig = getChainConfig(chainId);
+  const swag1155 = chainConfig.swag1155;
 
   const query = useQuery({
     queryKey: ['user-nfts', userAddress, chainId, swag1155],
