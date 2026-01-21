@@ -22,6 +22,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: '**.ipfs.dweb.link',
       },
+      {
+        protocol: 'https',
+        hostname: 'ipfs.io',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.ipfs.io',
+      },
     ],
     // Optimize images for better LCP
     formats: ['image/avif', 'image/webp'],

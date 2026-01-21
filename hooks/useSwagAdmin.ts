@@ -75,7 +75,18 @@ export function useAllVariants() {
             }),
           ]);
 
-          const [price, maxSupply, minted, active] = variantData as [bigint, bigint, bigint, boolean];
+          // Handle both object and array return formats from viem
+          let price: bigint, maxSupply: bigint, minted: bigint, active: boolean;
+          if (Array.isArray(variantData)) {
+            [price, maxSupply, minted, active] = variantData as [bigint, bigint, bigint, boolean];
+          } else {
+            // Struct returned as object with named properties
+            const variant = variantData as { price: bigint; maxSupply: bigint; minted: bigint; active: boolean };
+            price = variant.price;
+            maxSupply = variant.maxSupply;
+            minted = variant.minted;
+            active = variant.active;
+          }
 
           // Fetch metadata from IPFS
           let metadata: Swag1155Metadata | null = null;
@@ -354,5 +365,145 @@ export function useMarkFulfilled() {
   return {
     markFulfilled,
     canMarkFulfilled: Boolean(swag1155 && activeWallet),
+  };
+}
+
+/**
+ * Hook to get current contract settings (USDC address, Treasury address)
+ */
+export function useContractSettings() {
+  const { swag1155, chainId } = useSwagAddresses();
+
+  const query = useQuery({
+    queryKey: ['contract-settings', swag1155, chainId],
+    queryFn: async () => {
+      if (!swag1155 || !chainId) throw new Error('Missing contract address or chain ID');
+
+      const rpcUrl = getChainRpc(chainId);
+      const client = createPublicClient({
+        transport: http(rpcUrl),
+      });
+
+      const [usdc, treasury] = await Promise.all([
+        client.readContract({
+          address: swag1155 as `0x${string}`,
+          abi: Swag1155ABI as any,
+          functionName: 'usdc',
+        }) as Promise<string>,
+        client.readContract({
+          address: swag1155 as `0x${string}`,
+          abi: Swag1155ABI as any,
+          functionName: 'treasury',
+        }) as Promise<string>,
+      ]);
+
+      return { usdc, treasury };
+    },
+    enabled: Boolean(swag1155 && chainId),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  return {
+    usdc: query.data?.usdc,
+    treasury: query.data?.treasury,
+    isLoading: query.isLoading,
+    error: query.error instanceof Error ? query.error.message : null,
+    refetch: query.refetch,
+  };
+}
+
+/**
+ * Hook to set USDC payment token address
+ */
+export function useSetUSDC() {
+  const { swag1155, chainId } = useSwagAddresses();
+  const { wallets } = useWallets();
+  const { sendTransaction } = useSendTransaction();
+  const queryClient = useQueryClient();
+
+  const activeWallet = wallets?.[0];
+  const isEmbedded = activeWallet?.walletClientType === 'privy';
+
+  const setUSDC = async (usdcAddress: string) => {
+    if (!swag1155 || !chainId) {
+      throw new Error('Missing contract address');
+    }
+
+    if (!activeWallet) {
+      throw new Error('Wallet not connected');
+    }
+
+    const data = encodeFunctionData({
+      abi: Swag1155ABI as any,
+      functionName: 'setUSDC',
+      args: [usdcAddress as `0x${string}`],
+    });
+
+    const result = await sendTransaction({
+      to: swag1155 as `0x${string}`,
+      data,
+      chainId,
+    }, {
+      address: activeWallet.address,
+      sponsor: isEmbedded,
+    } as any);
+
+    // Invalidate queries to refresh settings
+    queryClient.invalidateQueries({ queryKey: ['contract-settings'] });
+
+    return result;
+  };
+
+  return {
+    setUSDC,
+    canSetUSDC: Boolean(swag1155 && activeWallet),
+  };
+}
+
+/**
+ * Hook to set Treasury address
+ */
+export function useSetTreasury() {
+  const { swag1155, chainId } = useSwagAddresses();
+  const { wallets } = useWallets();
+  const { sendTransaction } = useSendTransaction();
+  const queryClient = useQueryClient();
+
+  const activeWallet = wallets?.[0];
+  const isEmbedded = activeWallet?.walletClientType === 'privy';
+
+  const setTreasury = async (treasuryAddress: string) => {
+    if (!swag1155 || !chainId) {
+      throw new Error('Missing contract address');
+    }
+
+    if (!activeWallet) {
+      throw new Error('Wallet not connected');
+    }
+
+    const data = encodeFunctionData({
+      abi: Swag1155ABI as any,
+      functionName: 'setTreasury',
+      args: [treasuryAddress as `0x${string}`],
+    });
+
+    const result = await sendTransaction({
+      to: swag1155 as `0x${string}`,
+      data,
+      chainId,
+    }, {
+      address: activeWallet.address,
+      sponsor: isEmbedded,
+    } as any);
+
+    // Invalidate queries to refresh settings
+    queryClient.invalidateQueries({ queryKey: ['contract-settings'] });
+
+    return result;
+  };
+
+  return {
+    setTreasury,
+    canSetTreasury: Boolean(swag1155 && activeWallet),
   };
 }

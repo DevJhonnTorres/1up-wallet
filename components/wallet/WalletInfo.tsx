@@ -12,7 +12,10 @@ import { parseUnits, encodeFunctionData } from 'viem';
 import { base, mainnet, optimism } from 'viem/chains';
 import { useTokenPrices } from '../../hooks/useTokenPrices';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
+import { getTokenAddresses } from '../../utils/network';
 import ReceiveModal from './ReceiveModal';
+import { useUserNFTs } from '../../hooks/useUserNFTs';
+import { NFTCard } from './NFTCard';
 
 interface WalletInfoProps {
   wallet: Wallet;
@@ -54,6 +57,9 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
 
   // Fund wallet state
   const [isFunding, setIsFunding] = useState(false);
+
+  // NFTs for collectibles tab
+  const { data: nfts = [], isLoading: isLoadingNFTs, refetch: refetchNFTs } = useUserNFTs();
   
   // Get the actual wallet instance from Privy's useWallets hook
   const privyWallet = wallets?.find(w => w.address.toLowerCase() === wallet.address.toLowerCase());
@@ -141,32 +147,17 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     }
   };
 
-  // Get token addresses based on chain
+  // Get token addresses based on chain (using centralized config)
   const getTokenAddress = (tokenSymbol: string): string | null => {
     if (tokenSymbol === 'ETH') return null; // Native token
     if (!chainId) return null;
     
-    const tokenAddresses: Record<number, Record<string, string>> = {
-      1: { // Ethereum
-        USDC: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-        USDT: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-        EURC: '0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c',
-      },
-      10: { // Optimism
-        USDC: '0x7F5c764cBc14f9669B88837ca1490cCa17c31607',
-        USDT: '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58',
-      },
-      8453: { // Base
-        USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-        USDT: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2',
-        EURC: '0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42',
-      },
-      130: { // Unichain
-        USDC: '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
-      },
-    };
+    // Use centralized token addresses from utils/network
+    const tokenAddresses = getTokenAddresses(chainId);
+    const address = tokenAddresses[tokenSymbol as keyof typeof tokenAddresses];
     
-    return tokenAddresses[chainId]?.[tokenSymbol] || null;
+    // Return null if token not available on this chain (empty string)
+    return address && address.trim() !== '' ? address : null;
   };
 
   // Prepare available tokens for SendTokenModal - show all 4 tokens regardless of balance
@@ -555,20 +546,41 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         ) : (
           /* Collectibles Tab */
           <div className="collectibles-list">
-            <div className="collectibles-empty">
-              <div className="empty-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <path d="M21 15l-5-5L5 21" />
-                </svg>
+            {isLoadingNFTs ? (
+              <div className="collectibles-loading">
+                <Loading size="small" text="Loading collectibles..." />
               </div>
-              <h4>No Collectibles Yet</h4>
-              <p>Your NFTs and collectibles will appear here</p>
-              <Link href="/swag" className="browse-swag-link">
-                Browse ETH CALI Swag
-              </Link>
-            </div>
+            ) : nfts.length === 0 ? (
+              <div className="collectibles-empty">
+                <div className="empty-icon">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <path d="M21 15l-5-5L5 21" />
+                  </svg>
+                </div>
+                <h4>No Collectibles Yet</h4>
+                <p>Your NFTs and collectibles will appear here</p>
+                <Link href="/swag" className="browse-swag-link">
+                  Browse ETH CALI Swag
+                </Link>
+              </div>
+            ) : (
+              <div className="nfts-grid">
+                {nfts.map((nft) => (
+                  <NFTCard
+                    key={`${nft.tokenId.toString()}-${nft.redemptionStatus}`}
+                    nft={nft}
+                    onRedeemSuccess={() => {
+                      // Refetch NFTs after redemption to update status
+                      setTimeout(() => {
+                        refetchNFTs();
+                      }, 2000);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1088,6 +1100,13 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           min-height: 200px;
         }
 
+        .collectibles-loading {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 3rem 1.5rem;
+        }
+
         .collectibles-empty {
           display: flex;
           flex-direction: column;
@@ -1116,6 +1135,18 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           color: #9ca3af;
           font-size: 0.875rem;
           margin: 0 0 1.5rem 0;
+        }
+
+        .nfts-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 1rem;
+        }
+
+        @media (max-width: 640px) {
+          .nfts-grid {
+            grid-template-columns: 1fr;
+          }
         }
 
         .browse-swag-link {

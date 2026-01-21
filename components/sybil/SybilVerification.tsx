@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { QRCodeSVG } from 'qrcode.react';
 import { useWallets, useSendTransaction } from '@privy-io/react-auth';
 import { encodeFunctionData, createPublicClient, http, decodeEventLog } from 'viem';
@@ -23,6 +22,14 @@ let requestPersonhoodVerification: any;
 interface SybilVerificationProps {
   chainId: number;
   onMintSuccess?: () => void;
+  onVerificationStatusChange?: (
+    status: 'idle' | 'verified' | 'minting' | 'minted' | 'failed' | 'rejected' | 'duplicate',
+    data?: {
+      uniqueIdentifier?: string | null;
+      faceMatchPassed?: boolean;
+      personhoodVerified?: boolean;
+    }
+  ) => void;
 }
 
 type VerificationStatus = 
@@ -50,19 +57,18 @@ interface MintData {
   sponsorAddress: string;
 }
 
-// Helper to mask unique identifier for privacy
+// Helper to mask unique identifier for privacy (used in verification flow)
 const maskIdentifier = (uid: string): string => {
   if (!uid || uid.length < 12) return '***';
   return `${uid.slice(0, 6)}...${uid.slice(-4)}`;
 };
 
-const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSuccess }) => {
+const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSuccess, onVerificationStatusChange }) => {
   const { wallets } = useWallets();
   const { sendTransaction } = useSendTransaction();
   const userWallet = wallets?.[0];
 
   const [isClient, setIsClient] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   
   // Verification state
   const [status, setStatus] = useState<VerificationStatus>('idle');
@@ -77,17 +83,9 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
   const [generatingProof, setGeneratingProof] = useState(false);
   const [proofsGenerated, setProofsGenerated] = useState(0);
   
-  // NFT state
-  const [alreadyHasNFT, setAlreadyHasNFT] = useState(false);
+  // Minting state
   const [mintTxHash, setMintTxHash] = useState<string | null>(null);
   const [isMinting, setIsMinting] = useState(false);
-  const [tokenId, setTokenId] = useState<bigint | null>(null);
-  const [tokenData, setTokenData] = useState<{
-    uniqueIdentifier: string;
-    faceMatchPassed: boolean;
-    personhoodVerified: boolean;
-  } | null>(null);
-  const [nftMetadata, setNftMetadata] = useState<any>(null);
 
   const addresses = getContractAddresses(chainId);
 
@@ -101,56 +99,16 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
     }
   }, []);
 
-  // Check if user already has NFT and fetch details
+  // Notify parent of status changes (only for relevant statuses)
   useEffect(() => {
-    const checkNFTOwnership = async () => {
-      if (!userWallet?.address) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const hasToken = await hasNFTByAddress(chainId, userWallet.address);
-        console.log(`NFT check result: ${hasToken} for chainId ${chainId}`);
-        setAlreadyHasNFT(hasToken);
-        if (hasToken) {
-          setStatus('minted');
-          
-          // Fetch NFT details
-          const fetchedTokenId = await getTokenIdByAddress(chainId, userWallet.address);
-          if (fetchedTokenId) {
-            setTokenId(fetchedTokenId);
-            const [data, uri] = await Promise.all([
-              getTokenData(chainId, fetchedTokenId),
-              getTokenURI(chainId, fetchedTokenId),
-            ]);
-            setTokenData(data);
-            if (uri) {
-              try {
-                if (uri.startsWith('data:application/json;base64,')) {
-                  const base64Data = uri.split(',')[1];
-                  const jsonData = JSON.parse(atob(base64Data));
-                  setNftMetadata(jsonData);
-                } else if (uri.startsWith('http')) {
-                  const response = await fetch(uri);
-                  const jsonData = await response.json();
-                  setNftMetadata(jsonData);
-                }
-              } catch (err) {
-                console.error('Error parsing metadata:', err);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error checking NFT ownership:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkNFTOwnership();
-  }, [chainId, userWallet?.address]);
+    if (onVerificationStatusChange && ['idle', 'verified', 'minting', 'minted', 'failed', 'rejected', 'duplicate'].includes(status)) {
+      onVerificationStatusChange(status as 'idle' | 'verified' | 'minting' | 'minted' | 'failed' | 'rejected' | 'duplicate', {
+        uniqueIdentifier,
+        faceMatchPassed,
+        personhoodVerified,
+      });
+    }
+  }, [status, uniqueIdentifier, faceMatchPassed, personhoodVerified, onVerificationStatusChange]);
 
   // User clicks mint - direct mint with Privy sponsorship (no backend signature needed)
   const mintNFT = async () => {
@@ -163,6 +121,32 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
       setErrorMessage('Missing unique identifier from verification. Please verify again.');
       console.error('Mint failed - uniqueIdentifier is:', uniqueIdentifier);
       return;
+    }
+
+    // Check if unique identifier already has an NFT (prevent duplicate unique identifier usage)
+    try {
+      const identifierHasNFT = await hasNFT(chainId, uniqueIdentifier);
+      if (identifierHasNFT) {
+        setErrorMessage('This unique identifier has already been used to mint an NFT. Each identity can only mint once.');
+        setStatus('duplicate');
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking unique identifier NFT ownership:', error);
+      // Continue with mint attempt if check fails (contract will enforce it)
+    }
+
+    // Check if address already has an NFT (prevent duplicate minting per address)
+    try {
+      const addressHasNFT = await hasNFTByAddress(chainId, userWallet.address);
+      if (addressHasNFT) {
+        setErrorMessage('This address already has an NFT. Only one NFT per address is allowed.');
+        setStatus('duplicate');
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking address NFT ownership:', error);
+      // Continue with mint attempt if check fails (contract will enforce it)
     }
 
     setIsMinting(true);
@@ -204,97 +188,6 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
       console.log('Sponsored transaction sent:', result.hash);
       setMintTxHash(result.hash);
       setStatus('minted');
-      setAlreadyHasNFT(true);
-      
-      // Fetch NFT details after minting
-      try {
-        // Wait for transaction receipt
-        const rpcUrl = getChainRpc(chainId);
-        const client = createPublicClient({
-          transport: http(rpcUrl),
-        });
-        
-        const receipt = await client.waitForTransactionReceipt({
-          hash: result.hash as `0x${string}`,
-        });
-        
-        // Extract tokenId from NFTMinted event
-        const nftMintedEvent = receipt.logs.find((log: any) => {
-          try {
-            const decoded = decodeEventLog({
-              abi: ZKPassportNFTABI as any,
-              data: log.data,
-              topics: log.topics,
-            });
-            return decoded.eventName === 'NFTMinted';
-          } catch {
-            return false;
-          }
-        });
-        
-        if (nftMintedEvent) {
-          const decoded = decodeEventLog({
-            abi: ZKPassportNFTABI as any,
-            data: nftMintedEvent.data,
-            topics: nftMintedEvent.topics,
-          });
-          const mintedTokenId = (decoded.args as any).tokenId as bigint;
-          setTokenId(mintedTokenId);
-          
-          // Fetch token data and metadata
-          const [data, uri] = await Promise.all([
-            getTokenData(chainId, mintedTokenId),
-            getTokenURI(chainId, mintedTokenId),
-          ]);
-          
-          setTokenData(data);
-          
-          // Parse tokenURI if it's base64
-          if (uri) {
-            try {
-              if (uri.startsWith('data:application/json;base64,')) {
-                const base64Data = uri.split(',')[1];
-                const jsonData = JSON.parse(atob(base64Data));
-                setNftMetadata(jsonData);
-              } else if (uri.startsWith('http')) {
-                const response = await fetch(uri);
-                const jsonData = await response.json();
-                setNftMetadata(jsonData);
-              }
-            } catch (err) {
-              console.error('Error parsing metadata:', err);
-            }
-          }
-        } else {
-          // Fallback: try to get tokenId by address
-          const fetchedTokenId = await getTokenIdByAddress(chainId, userWallet.address);
-          if (fetchedTokenId) {
-            setTokenId(fetchedTokenId);
-            const [data, uri] = await Promise.all([
-              getTokenData(chainId, fetchedTokenId),
-              getTokenURI(chainId, fetchedTokenId),
-            ]);
-            setTokenData(data);
-            if (uri) {
-              try {
-                if (uri.startsWith('data:application/json;base64,')) {
-                  const base64Data = uri.split(',')[1];
-                  const jsonData = JSON.parse(atob(base64Data));
-                  setNftMetadata(jsonData);
-                } else if (uri.startsWith('http')) {
-                  const response = await fetch(uri);
-                  const jsonData = await response.json();
-                  setNftMetadata(jsonData);
-                }
-              } catch (err) {
-                console.error('Error parsing metadata:', err);
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching NFT details:', err);
-      }
       
       onMintSuccess?.();
 
@@ -435,167 +328,15 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
     setProofsGenerated(0);
     setMintTxHash(null);
     setIsMinting(false);
-    setTokenId(null);
-    setTokenData(null);
-    setNftMetadata(null);
   };
 
-  // Helper function to get IPFS gateway URL
-  const getIPFSImageUrl = (imageUrl: string): string => {
-    if (!imageUrl) return '';
-    if (imageUrl.startsWith('ipfs://')) {
-      return `https://gateway.pinata.cloud/ipfs/${imageUrl.replace('ipfs://', '')}`;
-    }
-    if (imageUrl.startsWith('http')) {
-      return imageUrl;
-    }
-    return imageUrl;
-  };
 
-  // NFT Card Component
-  const renderNFTCard = () => {
-    if (isLoading) {
-      return (
-        <div className="bg-black/60 border border-cyan-500/30 rounded-lg p-4">
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-3 h-3 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-cyan-400 font-mono text-[10px] tracking-wider">LOADING...</span>
-          </div>
-        </div>
-      );
-    }
-
-    if (alreadyHasNFT) {
-      return (
-        <div className="bg-black/60 border border-green-500/40 rounded-lg p-4 space-y-3">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-3 h-3 bg-green-500 rounded-full shadow-lg shadow-green-500/50"></div>
-            <div>
-              <h2 className="text-sm font-bold text-green-400 font-mono tracking-wide">VERIFIED</h2>
-              <p className="text-gray-600 text-[10px] font-mono">{getNetworkName(chainId).toUpperCase()}</p>
-            </div>
-          </div>
-
-          {/* NFT Image if available */}
-          {nftMetadata?.image && (
-            <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20 relative aspect-square">
-              <Image 
-                src={getIPFSImageUrl(nftMetadata.image)} 
-                alt="ZKPassport NFT" 
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 400px"
-                unoptimized={nftMetadata.image.startsWith('ipfs://')}
-              />
-            </div>
-          )}
-
-          {/* NFT Name */}
-          {nftMetadata?.name && (
-            <div className="mb-2">
-              <h3 className="text-sm font-bold text-cyan-400 font-mono">{nftMetadata.name}</h3>
-            </div>
-          )}
-
-          {/* NFT Description */}
-          {nftMetadata?.description && (
-            <div className="mb-2">
-              <p className="text-[10px] text-gray-500 font-mono">{nftMetadata.description}</p>
-            </div>
-          )}
-
-          {/* NFT Details */}
-          {(tokenId || tokenData) && (
-            <div className="space-y-1.5 text-[10px] font-mono">
-              {tokenId && (
-                <div className="flex justify-between py-1 border-b border-gray-800">
-                  <span className="text-gray-600">token_id</span>
-                  <span className="text-cyan-400">#{tokenId.toString()}</span>
-                </div>
-              )}
-              {tokenData && (
-                <>
-                  <div className="flex justify-between py-1 border-b border-gray-800">
-                    <span className="text-gray-600">uid</span>
-                    <span className="text-cyan-400">{maskIdentifier(tokenData.uniqueIdentifier)}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-gray-800">
-                    <span className="text-gray-600">face_match</span>
-                    <span className={tokenData.faceMatchPassed ? 'text-green-400' : 'text-gray-600'}>
-                      {tokenData.faceMatchPassed ? 'PASS' : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span className="text-gray-600">personhood</span>
-                    <span className={tokenData.personhoodVerified ? 'text-green-400' : 'text-gray-600'}>
-                      {tokenData.personhoodVerified ? 'VERIFIED' : 'FALSE'}
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Attributes from metadata */}
-          {nftMetadata?.attributes && nftMetadata.attributes.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-800">
-              <div className="text-[9px] text-gray-600 font-mono mb-2 tracking-wider">ATTRIBUTES</div>
-              <div className="flex flex-wrap gap-1.5">
-                {nftMetadata.attributes.map((attr: any, idx: number) => (
-                  <div 
-                    key={idx}
-                    className="px-2 py-1 bg-gray-900/50 border border-gray-800 rounded text-[9px] font-mono"
-                  >
-                    <span className="text-gray-500">{attr.trait_type}:</span>{' '}
-                    <span className="text-cyan-400">{attr.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <Link
-            href="/faucet"
-            className="block w-full py-2.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 rounded text-green-400 font-mono text-xs font-bold text-center transition-all"
-          >
-            CLAIM_FAUCET →
-          </Link>
-        </div>
-      );
-    }
-
-    // No NFT - Show placeholder card
-    return (
-      <div className="bg-black/60 border border-gray-700/40 rounded-lg p-4 space-y-3">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
-          <div>
-            <h2 className="text-sm font-bold text-gray-400 font-mono tracking-wide">NO_VERIFICATION</h2>
-            <p className="text-gray-600 text-[10px] font-mono">{getNetworkName(chainId).toUpperCase()}</p>
-          </div>
-        </div>
-
-        <div className="text-center py-8">
-          <div className="text-gray-600 text-[10px] font-mono mb-4">
-            VERIFY YOUR IDENTITY TO MINT YOUR ZKPASSPORT NFT
-          </div>
-          <div className="text-gray-700 text-[9px] font-mono">
-            • PRIVACY_FIRST • NO_KYC • SOULBOUND
-          </div>
-        </div>
-      </div>
-    );
-  };
 
 
   return (
     <div className="space-y-4">
-      {/* NFT Card - Always shown at top */}
-      {renderNFTCard()}
-
-      {/* Verification Flow - Only show if no NFT */}
-      {!alreadyHasNFT && (
-        <div className="bg-black/60 border border-cyan-500/30 rounded-lg p-4 space-y-4">
+      {/* Verification Flow */}
+      <div className="bg-black/60 border border-cyan-500/30 rounded-lg p-4 space-y-4">
           {/* Minimal Header */}
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
@@ -776,118 +517,18 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
         </div>
       )}
 
-      {/* Minted Success - Show NFT Details */}
-      {status === 'minted' && (
-        <div className="space-y-3">
-          <div className="bg-green-500/10 border border-green-500/30 rounded p-3">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 bg-green-500 rounded-full shadow-lg shadow-green-500/50"></div>
-              <span className="text-[10px] text-green-400 font-mono tracking-wider">MINTED</span>
-            </div>
-
-            {/* NFT Image if available */}
-            {nftMetadata?.image && (
-              <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20 relative aspect-square">
-                <Image 
-                  src={getIPFSImageUrl(nftMetadata.image)} 
-                  alt="ZKPassport NFT" 
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 400px"
-                  unoptimized={nftMetadata.image.startsWith('ipfs://')}
-                />
-              </div>
-            )}
-
-            {/* NFT Name */}
-            {nftMetadata?.name && (
-              <div className="mb-2">
-                <h3 className="text-sm font-bold text-cyan-400 font-mono">{nftMetadata.name}</h3>
-              </div>
-            )}
-
-            {/* NFT Details */}
-            <div className="space-y-1.5 text-[10px] font-mono mb-3">
-              {tokenId && (
-                <div className="flex justify-between py-1 border-b border-gray-800">
-                  <span className="text-gray-600">token_id</span>
-                  <span className="text-cyan-400">#{tokenId.toString()}</span>
-                </div>
-              )}
-              <div className="flex justify-between py-1 border-b border-gray-800">
-                <span className="text-gray-600">uid</span>
-                <span className="text-cyan-400">
-                  {tokenData?.uniqueIdentifier 
-                    ? maskIdentifier(tokenData.uniqueIdentifier) 
-                    : uniqueIdentifier 
-                      ? maskIdentifier(uniqueIdentifier) 
-                      : '***'}
-                </span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-gray-800">
-                <span className="text-gray-600">face_match</span>
-                <span className={tokenData?.faceMatchPassed ? 'text-green-400' : 'text-gray-600'}>
-                  {tokenData?.faceMatchPassed ? 'PASS' : 'N/A'}
-                </span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-gray-800">
-                <span className="text-gray-600">personhood</span>
-                <span className={tokenData?.personhoodVerified ? 'text-green-400' : 'text-gray-600'}>
-                  {tokenData?.personhoodVerified ? 'VERIFIED' : 'FALSE'}
-                </span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-gray-600">status</span>
-                <span className="text-green-400">SOULBOUND</span>
-              </div>
-            </div>
-
-            {/* Attributes from metadata */}
-            {nftMetadata?.attributes && nftMetadata.attributes.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-gray-800">
-                <div className="text-[9px] text-gray-600 font-mono mb-2 tracking-wider">ATTRIBUTES</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {nftMetadata.attributes.map((attr: any, idx: number) => (
-                    <div 
-                      key={idx}
-                      className="px-2 py-1 bg-gray-900/50 border border-gray-800 rounded text-[9px] font-mono"
-                    >
-                      <span className="text-gray-500">{attr.trait_type}:</span>{' '}
-                      <span className="text-cyan-400">{attr.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Transaction Link */}
-            {mintTxHash && (
-              <div className="mt-3 pt-3 border-t border-gray-800">
-                <a
-                  href={getExplorerUrl(chainId, mintTxHash)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[9px] text-gray-500 hover:text-cyan-400 font-mono"
-                >
-                  tx: {mintTxHash.slice(0, 10)}...{mintTxHash.slice(-6)} →
-                </a>
-              </div>
-            )}
-
-            {/* Network Info */}
-            <div className="mt-2 pt-2 border-t border-gray-800">
-              <span className="text-[9px] text-gray-600 font-mono">
-                {getNetworkName(chainId).toUpperCase()} • SOULBOUND • NON_TRANSFERABLE
-              </span>
-            </div>
-          </div>
-
-          <Link
-            href="/faucet"
-            className="block w-full py-2.5 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 rounded text-cyan-400 font-mono text-xs font-bold text-center transition-all"
+      {/* Transaction Link - Show after minting */}
+      {status === 'minted' && mintTxHash && (
+        <div className="bg-black/40 rounded p-3 border border-cyan-500/20">
+          <div className="text-[10px] text-gray-500 font-mono mb-2 tracking-wider">TRANSACTION</div>
+          <a
+            href={getExplorerUrl(chainId, mintTxHash)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[9px] text-cyan-400 hover:text-cyan-300 font-mono block"
           >
-            CLAIM_FAUCET →
-          </Link>
+            tx: {mintTxHash.slice(0, 10)}...{mintTxHash.slice(-6)} →
+          </a>
         </div>
       )}
 
@@ -934,8 +575,7 @@ const SybilVerification: React.FC<SybilVerificationProps> = ({ chainId, onMintSu
           </button>
         </div>
       )}
-        </div>
-      )}
+      </div>
     </div>
   );
 };

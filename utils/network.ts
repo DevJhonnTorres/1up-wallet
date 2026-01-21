@@ -18,12 +18,41 @@ type ChainConfig = {
 
 const FALLBACK_CHAIN_ID = Number(process.env.NEXT_PUBLIC_DEFAULT_CHAIN_ID || 8453);
 
-// USDC addresses (not part of our deployed contracts)
+// Token addresses (standard tokens, not part of our deployed contracts)
+// These can be overridden via .env if needed
+const TOKEN_ADDRESSES: Record<ChainLabel, {
+  USDC: string;
+  USDT: string;
+  EURC: string;
+}> = {
+  base: {
+    USDC: process.env.NEXT_PUBLIC_USDC_BASE || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    USDT: process.env.NEXT_PUBLIC_USDT_BASE || '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2',
+    EURC: process.env.NEXT_PUBLIC_EURC_BASE || '0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42',
+  },
+  ethereum: {
+    USDC: process.env.NEXT_PUBLIC_USDC_ETHEREUM || '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    USDT: process.env.NEXT_PUBLIC_USDT_ETHEREUM || '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+    EURC: process.env.NEXT_PUBLIC_EURC_ETHEREUM || '0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c',
+  },
+  unichain: {
+    USDC: process.env.NEXT_PUBLIC_USDC_UNICHAIN || '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
+    USDT: '', // Not available on Unichain
+    EURC: '', // Not available on Unichain
+  },
+  optimism: {
+    USDC: process.env.NEXT_PUBLIC_USDC_OPTIMISM || '0x7F5c764cBc14f9669B88837ca1490cCa17c31607',
+    USDT: process.env.NEXT_PUBLIC_USDT_OPTIMISM || '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58',
+    EURC: '', // Not available on Optimism
+  },
+};
+
+// Legacy USDC addresses for backward compatibility
 const USDC_ADDRESSES: Record<ChainLabel, string> = {
-  base: '0x833589fCD6eDb6E08f4c7C32D4f71b1566469C5d',
-  ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-  unichain: '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
-  optimism: '0x7F5c764cBc14f9669B88837ca1490cCa17c31607',
+  base: TOKEN_ADDRESSES.base.USDC,
+  ethereum: TOKEN_ADDRESSES.ethereum.USDC,
+  unichain: TOKEN_ADDRESSES.unichain.USDC,
+  optimism: TOKEN_ADDRESSES.optimism.USDC,
 };
 
 // Explorer URLs per chain
@@ -127,6 +156,7 @@ export function useSwagAddresses() {
     if (!isNaN(chainId) && chainId !== currentChainId) {
       setCurrentChainId(chainId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWallet?.chainId]);
 
   const config = useMemo(() => getChainConfig(currentChainId), [currentChainId]);
@@ -151,4 +181,14 @@ export function getContractAddresses(chainId?: number) {
     zkpassport: config.zkpassport,
     usdc: config.usdc,
   };
+}
+
+// Get token addresses for a chain (USDC, USDT, EURC)
+export function getTokenAddresses(chainId?: number): {
+  USDC: string;
+  USDT: string;
+  EURC: string;
+} {
+  const label = getLabelByChainId(chainId || FALLBACK_CHAIN_ID);
+  return TOKEN_ADDRESSES[label];
 }

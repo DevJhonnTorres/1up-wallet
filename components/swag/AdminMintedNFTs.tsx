@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { useAllMintedNFTs, useMarkFulfilled, MintedNFT, RedemptionStatus } from '../../hooks/useSwagAdmin';
 import { getIPFSGatewayUrl } from '../../lib/pinata';
 import { useSwagAddresses } from '../../utils/network';
+import { AdminQRScanner } from './AdminQRScanner';
+import { AdminNFTFulfillmentModal } from './AdminNFTFulfillmentModal';
 
 type FilterStatus = 'all' | 'pending' | 'fulfilled' | 'not-redeemed';
 
@@ -18,14 +20,33 @@ const statusColors: Record<RedemptionStatus, string> = {
   [RedemptionStatus.Fulfilled]: 'bg-green-500/10 text-green-400',
 };
 
-export function AdminMintedNFTs() {
+interface AdminMintedNFTsProps {
+  urlTokenId?: bigint;
+  urlOwner?: string;
+  urlChainId?: number;
+}
+
+export function AdminMintedNFTs({ 
+  urlTokenId, 
+  urlOwner, 
+  urlChainId 
+}: AdminMintedNFTsProps = {}) {
   const { mintedNFTs, isLoading, error, refetch } = useAllMintedNFTs();
   const { markFulfilled, canMarkFulfilled } = useMarkFulfilled();
-  const { explorerUrl } = useSwagAddresses();
+  const { explorerUrl, chainId: currentChainId, swag1155 } = useSwagAddresses();
 
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [searchOwner, setSearchOwner] = useState('');
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+  const [scannedData, setScannedData] = useState<{
+    tokenId: string;
+    owner: string;
+    chainId: number;
+    contract: string;
+    status: number;
+  } | null>(null);
+  const [fulfillmentModalNft, setFulfillmentModalNft] = useState<MintedNFT | null>(null);
 
   const filteredNFTs = useMemo(() => {
     return mintedNFTs.filter((nft) => {
@@ -49,6 +70,35 @@ export function AdminMintedNFTs() {
     });
   }, [mintedNFTs, filterStatus, searchOwner]);
 
+  // Handle URL parameters - show modal when URL params are provided
+  useEffect(() => {
+    if (urlTokenId && urlOwner && !fulfillmentModalNft && mintedNFTs.length > 0) {
+      // Validate chain ID if provided
+      if (urlChainId && urlChainId !== currentChainId) {
+        console.warn('[AdminMintedNFTs] Chain ID mismatch:', { urlChainId, currentChainId });
+        // Still try to find the NFT, but warn about chain mismatch
+      }
+
+      // Find matching NFT
+      const matchingNFT = mintedNFTs.find(
+        (nft) =>
+          nft.tokenId.toString() === urlTokenId.toString() &&
+          nft.owner.toLowerCase() === urlOwner.toLowerCase()
+      );
+
+      if (matchingNFT) {
+        console.log('[AdminMintedNFTs] Found matching NFT from URL params:', matchingNFT);
+        setFulfillmentModalNft(matchingNFT);
+        // Auto-filter to pending for better visibility
+        if (matchingNFT.redemptionStatus === RedemptionStatus.PendingFulfillment) {
+          setFilterStatus('pending');
+        }
+      } else {
+        console.warn('[AdminMintedNFTs] No matching NFT found for URL params:', { urlTokenId, urlOwner });
+      }
+    }
+  }, [urlTokenId, urlOwner, urlChainId, mintedNFTs, currentChainId, fulfillmentModalNft]);
+
   const handleMarkFulfilled = async (nft: MintedNFT) => {
     const key = `${nft.tokenId.toString()}-${nft.owner}`;
     setProcessingIds((prev) => new Set(prev).add(key));
@@ -56,6 +106,8 @@ export function AdminMintedNFTs() {
     try {
       await markFulfilled(nft.tokenId, nft.owner);
       refetch();
+      setScannedData(null);
+      setFulfillmentModalNft(null); // Close modal after fulfillment
     } catch (err) {
       console.error('Failed to mark fulfilled:', err);
       alert(err instanceof Error ? err.message : 'Failed to mark as fulfilled');
@@ -65,6 +117,99 @@ export function AdminMintedNFTs() {
         next.delete(key);
         return next;
       });
+    }
+  };
+
+  const handleModalFulfill = async (tokenId: bigint, owner: string) => {
+    const nft = fulfillmentModalNft;
+    if (!nft) return;
+    
+    await handleMarkFulfilled(nft);
+  };
+
+  const handleQRScan = (data: string) => {
+    console.log('[AdminMintedNFTs] Received QR scan data:', data);
+    
+    if (!data || typeof data !== 'string') {
+      console.error('[AdminMintedNFTs] Invalid scan data:', data);
+      alert('Invalid QR code format.');
+      return;
+    }
+
+    // Check if it's a URL
+    if (data.startsWith('http://') || data.startsWith('https://') || data.startsWith('/')) {
+      console.log('[AdminMintedNFTs] QR code contains URL, navigating:', data);
+      setIsQRScannerOpen(false);
+      
+      // Extract relative path if it's a full URL
+      let url = data;
+      if (data.startsWith('http://') || data.startsWith('https://')) {
+        try {
+          const urlObj = new URL(data);
+          url = urlObj.pathname + urlObj.search;
+        } catch (e) {
+          console.error('[AdminMintedNFTs] Invalid URL:', e);
+          alert('Invalid URL in QR code.');
+          return;
+        }
+      }
+      
+      // Navigate to the URL (will trigger URL parameter handling)
+      window.location.href = url;
+      return;
+    }
+
+    // Otherwise, try to parse as JSON (backward compatibility)
+    try {
+      const parsed = JSON.parse(data);
+      console.log('[AdminMintedNFTs] Parsed QR data as JSON:', parsed);
+      
+      if (
+        parsed.tokenId &&
+        parsed.owner &&
+        parsed.chainId &&
+        parsed.contract &&
+        parsed.status === RedemptionStatus.PendingFulfillment
+      ) {
+        // Validate contract matches current chain
+        if (parsed.chainId === currentChainId && parsed.contract.toLowerCase() === swag1155?.toLowerCase()) {
+          setScannedData(parsed);
+          setIsQRScannerOpen(false);
+          
+          // Find matching NFT and show modal
+          const matchingNFT = mintedNFTs.find(
+            (nft) =>
+              nft.tokenId.toString() === parsed.tokenId.toString() &&
+              nft.owner.toLowerCase() === parsed.owner.toLowerCase() &&
+              nft.redemptionStatus === RedemptionStatus.PendingFulfillment
+          );
+
+          if (matchingNFT) {
+            console.log('[AdminMintedNFTs] Found matching NFT from JSON QR, showing modal:', matchingNFT);
+            setFulfillmentModalNft(matchingNFT);
+          } else {
+            console.warn('[AdminMintedNFTs] No matching NFT found:', { 
+              tokenId: parsed.tokenId, 
+              owner: parsed.owner,
+              availableNFTs: mintedNFTs.length 
+            });
+            alert(`NFT with Token ID ${parsed.tokenId} and owner ${parsed.owner.slice(0, 6)}... not found or already fulfilled.`);
+          }
+        } else {
+          console.warn('[AdminMintedNFTs] Chain/contract mismatch:', {
+            scanned: { chainId: parsed.chainId, contract: parsed.contract },
+            current: { chainId: currentChainId, contract: swag1155 }
+          });
+          alert('QR code is for a different contract or chain. Please ensure you are on the correct network.');
+        }
+      } else {
+        console.warn('[AdminMintedNFTs] Invalid QR code format:', parsed);
+        alert('Invalid redemption QR code format. Expected JSON with tokenId, owner, chainId, contract, and status.');
+      }
+    } catch (err) {
+      // Not valid JSON or URL
+      console.error('[AdminMintedNFTs] Parse error:', err, 'Data:', data);
+      alert(`Invalid QR code format. Expected a URL or JSON data. Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
@@ -111,12 +256,22 @@ export function AdminMintedNFTs() {
             )}
           </p>
         </div>
-        <button
-          onClick={() => refetch()}
-          className="text-sm text-cyan-400 hover:text-cyan-300 transition"
-        >
-          Refresh
-        </button>
+        <div className="flex gap-2">
+          {pendingCount > 0 && (
+            <button
+              onClick={() => setIsQRScannerOpen(true)}
+              className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 px-4 py-2 text-sm font-medium text-yellow-400 hover:bg-yellow-500/20 transition"
+            >
+              Scan QR Code
+            </button>
+          )}
+          <button
+            onClick={() => refetch()}
+            className="text-sm text-cyan-400 hover:text-cyan-300 transition"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -238,6 +393,44 @@ export function AdminMintedNFTs() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* QR Scanner Modal */}
+      {isQRScannerOpen && (
+        <AdminQRScanner
+          onScan={handleQRScan}
+          onClose={() => setIsQRScannerOpen(false)}
+        />
+      )}
+
+      {/* Fulfillment Modal */}
+      {fulfillmentModalNft && (
+        <AdminNFTFulfillmentModal
+          nft={fulfillmentModalNft}
+          onClose={() => setFulfillmentModalNft(null)}
+          onFulfill={handleModalFulfill}
+          isProcessing={processingIds.has(`${fulfillmentModalNft.tokenId.toString()}-${fulfillmentModalNft.owner}`)}
+        />
+      )}
+
+      {/* Scanned Data Confirmation */}
+      {scannedData && (
+        <div className="mt-4 rounded-lg bg-green-500/10 border border-green-500/30 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-green-400">QR Code Scanned Successfully</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Token ID: {scannedData.tokenId} | Owner: {scannedData.owner.slice(0, 6)}...{scannedData.owner.slice(-4)}
+              </p>
+            </div>
+            <button
+              onClick={() => setScannedData(null)}
+              className="text-green-400 hover:text-green-300"
+            >
+              ×
+            </button>
+          </div>
         </div>
       )}
     </div>

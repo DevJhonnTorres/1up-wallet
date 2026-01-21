@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useSendTransaction, usePrivy, useWallets } from '@privy-io/react-auth';
-import { createPublicClient, http, encodeFunctionData } from 'viem';
+import { createPublicClient, http, encodeFunctionData, getAddress, isAddress } from 'viem';
 import ERC20ABI from '../frontend/abis/ERC20.json';
 import Swag1155ABI from '../frontend/abis/Swag1155.json';
 import type { Swag1155Metadata } from '../types/swag';
@@ -65,7 +65,18 @@ export function useVariantState(tokenId: bigint) {
         args: [tokenId],
       });
 
-      const [price, maxSupply, minted, active] = variantData as [bigint, bigint, bigint, boolean];
+      // Handle both object and array return formats from viem
+      let price: bigint, maxSupply: bigint, minted: bigint, active: boolean;
+      if (Array.isArray(variantData)) {
+        [price, maxSupply, minted, active] = variantData as [bigint, bigint, bigint, boolean];
+      } else {
+        // Struct returned as object with named properties
+        const variant = variantData as { price: bigint; maxSupply: bigint; minted: bigint; active: boolean };
+        price = variant.price;
+        maxSupply = variant.maxSupply;
+        minted = variant.minted;
+        active = variant.active;
+      }
       return { price, maxSupply, minted, active };
     },
     enabled: Boolean(swag1155 && chainId),
@@ -203,6 +214,17 @@ export function useBuyVariant() {
       throw new Error(`Missing contract addresses for chain ${chainId}. Please ensure SWAG1155 is deployed on this network.`);
     }
 
+    // Validate and checksum addresses
+    if (!isAddress(usdc)) {
+      throw new Error(`Invalid USDC address for chain ${chainId}: ${usdc}`);
+    }
+    if (!isAddress(swag1155)) {
+      throw new Error(`Invalid Swag1155 address for chain ${chainId}: ${swag1155}`);
+    }
+    
+    const usdcAddress = getAddress(usdc);
+    const swag1155Address = getAddress(swag1155);
+
     const totalPrice = BigInt(Math.round(price * quantity * 1_000_000));
 
     // Create public client with correct chain RPC from env vars
@@ -213,24 +235,37 @@ export function useBuyVariant() {
       transport: http(rpcUrl),
     });
 
-    // Step 1: Check current allowance first
-    const currentAllowance = await publicClient.readContract({
-      address: usdc as `0x${string}`,
-      abi: ERC20ABI as any,
-      functionName: 'allowance',
-      args: [activeWallet.address as `0x${string}`, swag1155 as `0x${string}`],
-    }) as unknown as bigint;
+    // Step 1: Check current allowance first (with error handling)
+    let currentAllowance = 0n;
+    try {
+      const walletAddress = getAddress(activeWallet.address);
+      const allowanceResult = await publicClient.readContract({
+        address: usdcAddress,
+        abi: ERC20ABI as any,
+        functionName: 'allowance',
+        args: [walletAddress, swag1155Address],
+      });
+      // Handle case where result might be undefined or "0x"
+      if (allowanceResult !== undefined && allowanceResult !== null) {
+        currentAllowance = BigInt(allowanceResult.toString());
+      }
+    } catch (error: any) {
+      // If allowance check fails (RPC error, contract doesn't exist, etc.),
+      // assume no allowance and proceed with approval
+      console.warn('Failed to check allowance, assuming 0:', error?.message || error);
+      currentAllowance = 0n;
+    }
 
     // Only approve if current allowance is less than needed
     if (currentAllowance < totalPrice) {
       const approveData = encodeFunctionData({
         abi: ERC20ABI as any,
         functionName: 'approve',
-        args: [swag1155 as `0x${string}`, totalPrice],
+        args: [swag1155Address, totalPrice],
       });
 
       const approveResult = await sendTransaction({
-        to: usdc as `0x${string}`,
+        to: usdcAddress,
         data: approveData,
         chainId,
       }, {
@@ -248,15 +283,26 @@ export function useBuyVariant() {
         // If no hash returned, wait a bit and verify allowance was set
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        const newAllowance = await publicClient.readContract({
-          address: usdc as `0x${string}`,
-          abi: ERC20ABI as any,
-          functionName: 'allowance',
-          args: [activeWallet.address as `0x${string}`, swag1155 as `0x${string}`],
-        }) as unknown as bigint;
+        try {
+          const walletAddress = getAddress(activeWallet.address);
+          const allowanceResult = await publicClient.readContract({
+            address: usdcAddress,
+            abi: ERC20ABI as any,
+            functionName: 'allowance',
+            args: [walletAddress, swag1155Address],
+          });
+          
+          const newAllowance = allowanceResult !== undefined && allowanceResult !== null 
+            ? BigInt(allowanceResult.toString()) 
+            : 0n;
 
-        if (newAllowance < totalPrice) {
-          throw new Error('Approval failed - please try again');
+          if (newAllowance < totalPrice) {
+            throw new Error('Approval failed - please try again');
+          }
+        } catch (error: any) {
+          // If we can't verify allowance, log warning but proceed
+          // (approval transaction was sent, so it should have worked)
+          console.warn('Could not verify allowance after approval:', error?.message || error);
         }
       }
     }
@@ -269,7 +315,7 @@ export function useBuyVariant() {
     });
 
     return sendTransaction({
-      to: swag1155 as `0x${string}`,
+      to: swag1155Address,
       data: buyData,
       chainId,
     }, {

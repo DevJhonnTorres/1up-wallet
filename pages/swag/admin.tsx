@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWallets } from '@privy-io/react-auth';
+import { isAddress } from 'viem';
+import { useRouter } from 'next/router';
 import Navigation from '../../components/Navigation';
 import Layout from '../../components/shared/Layout';
 import { AdminProductForm } from '../../components/swag/AdminProductForm';
@@ -8,14 +10,41 @@ import { AdminMintedNFTs } from '../../components/swag/AdminMintedNFTs';
 import { AdminManagement } from '../../components/swag/AdminManagement';
 import { useSwagAddresses } from '../../utils/network';
 import { useContractAdmin } from '../../hooks/useContractAdmin';
+import { useContractSettings, useSetUSDC, useSetTreasury } from '../../hooks/useSwagAdmin';
 
 type TabId = 'create' | 'products' | 'minted' | 'admins' | 'settings';
 
 export default function SwagAdminPage() {
+  const router = useRouter();
   const { chainId, swag1155, explorerUrl } = useSwagAddresses();
   const { ready } = useWallets();
   const { isAdmin, isLoading: isCheckingAdmin, walletAddress } = useContractAdmin();
-  const [activeTab, setActiveTab] = useState<TabId>('create');
+  const { usdc, treasury, isLoading: isLoadingSettings, refetch: refetchSettings } = useContractSettings();
+  const { setUSDC, canSetUSDC } = useSetUSDC();
+  const { setTreasury, canSetTreasury } = useSetTreasury();
+  
+  // Read URL parameters for NFT fulfillment
+  const urlTokenId = router.query.tokenId as string | undefined;
+  const urlOwner = router.query.owner as string | undefined;
+  const urlChainId = router.query.chainId as string | undefined;
+  
+  // Determine initial tab - if URL params exist, start with 'minted' tab
+  const [activeTab, setActiveTab] = useState<TabId>(
+    urlTokenId && urlOwner ? 'minted' : 'create'
+  );
+  
+  const [usdcAddress, setUsdcAddress] = useState('');
+  const [treasuryAddress, setTreasuryAddress] = useState('');
+  const [isSettingUSDC, setIsSettingUSDC] = useState(false);
+  const [isSettingTreasury, setIsSettingTreasury] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // When URL params change, switch to minted tab if needed
+  useEffect(() => {
+    if (urlTokenId && urlOwner && activeTab !== 'minted') {
+      setActiveTab('minted');
+    }
+  }, [urlTokenId, urlOwner, activeTab]);
 
   if (!ready || isCheckingAdmin) {
     return (
@@ -145,7 +174,11 @@ export default function SwagAdminPage() {
           )}
 
           {activeTab === 'minted' && (
-            <AdminMintedNFTs />
+            <AdminMintedNFTs 
+              urlTokenId={urlTokenId ? BigInt(urlTokenId) : undefined}
+              urlOwner={urlOwner}
+              urlChainId={urlChainId ? parseInt(urlChainId, 10) : undefined}
+            />
           )}
 
           {activeTab === 'admins' && (
@@ -154,6 +187,37 @@ export default function SwagAdminPage() {
 
           {activeTab === 'settings' && (
             <div className="space-y-4">
+              {message && (
+                <div className={`p-3 rounded-lg text-[10px] font-mono ${
+                  message.type === 'success' 
+                    ? 'bg-green-500/10 border border-green-500/40 text-green-300' 
+                    : 'bg-red-500/10 border border-red-500/40 text-red-300'
+                }`}>
+                  {message.text}
+                </div>
+              )}
+
+              {/* Current Settings */}
+              {!isLoadingSettings && (usdc || treasury) && (
+                <div className="bg-black/60 border border-gray-800 rounded p-4">
+                  <p className="text-[9px] text-gray-500 font-mono tracking-wider mb-3">CURRENT_SETTINGS</p>
+                  <div className="space-y-2 text-[10px] font-mono">
+                    {usdc && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">USDC</span>
+                        <span className="text-cyan-400">{usdc.slice(0, 10)}...{usdc.slice(-8)}</span>
+                      </div>
+                    )}
+                    {treasury && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">TREASURY</span>
+                        <span className="text-cyan-400">{treasury.slice(0, 10)}...{treasury.slice(-8)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Treasury Settings */}
               <div className="bg-black/60 border border-gray-800 rounded p-4">
                 <p className="text-[9px] text-gray-500 font-mono tracking-wider mb-3">TREASURY</p>
@@ -161,11 +225,39 @@ export default function SwagAdminPage() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="0x... treasury address"
+                      value={treasuryAddress}
+                      onChange={(e) => setTreasuryAddress(e.target.value)}
+                      placeholder={treasury || "0x... treasury address"}
                       className="flex-1 bg-black/40 border border-gray-700 rounded px-3 py-2 text-[10px] font-mono text-gray-300 placeholder-gray-600 focus:border-pink-500/50 focus:outline-none"
+                      disabled={isSettingTreasury}
                     />
-                    <button className="px-4 py-2 bg-pink-500/10 border border-pink-500/30 rounded text-pink-400 text-[10px] font-mono hover:bg-pink-500/20 transition">
-                      SET
+                    <button
+                      onClick={async () => {
+                        if (!treasuryAddress.trim()) {
+                          setMessage({ type: 'error', text: 'Please enter treasury address' });
+                          return;
+                        }
+                        if (!isAddress(treasuryAddress)) {
+                          setMessage({ type: 'error', text: 'Invalid address format' });
+                          return;
+                        }
+                        setIsSettingTreasury(true);
+                        setMessage(null);
+                        try {
+                          await setTreasury(treasuryAddress);
+                          setMessage({ type: 'success', text: 'Treasury address updated!' });
+                          setTreasuryAddress('');
+                          refetchSettings();
+                        } catch (error) {
+                          setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to set treasury' });
+                        } finally {
+                          setIsSettingTreasury(false);
+                        }
+                      }}
+                      disabled={isSettingTreasury || !canSetTreasury}
+                      className="px-4 py-2 bg-pink-500/10 border border-pink-500/30 rounded text-pink-400 text-[10px] font-mono hover:bg-pink-500/20 transition disabled:opacity-50"
+                    >
+                      {isSettingTreasury ? 'SETTING...' : 'SET'}
                     </button>
                   </div>
                   <p className="text-[9px] text-gray-600 font-mono">USDC payments are sent here</p>
@@ -179,11 +271,39 @@ export default function SwagAdminPage() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="0x... USDC address"
+                      value={usdcAddress}
+                      onChange={(e) => setUsdcAddress(e.target.value)}
+                      placeholder={usdc || "0x... USDC address"}
                       className="flex-1 bg-black/40 border border-gray-700 rounded px-3 py-2 text-[10px] font-mono text-gray-300 placeholder-gray-600 focus:border-pink-500/50 focus:outline-none"
+                      disabled={isSettingUSDC}
                     />
-                    <button className="px-4 py-2 bg-pink-500/10 border border-pink-500/30 rounded text-pink-400 text-[10px] font-mono hover:bg-pink-500/20 transition">
-                      SET
+                    <button
+                      onClick={async () => {
+                        if (!usdcAddress.trim()) {
+                          setMessage({ type: 'error', text: 'Please enter USDC address' });
+                          return;
+                        }
+                        if (!isAddress(usdcAddress)) {
+                          setMessage({ type: 'error', text: 'Invalid address format' });
+                          return;
+                        }
+                        setIsSettingUSDC(true);
+                        setMessage(null);
+                        try {
+                          await setUSDC(usdcAddress);
+                          setMessage({ type: 'success', text: 'USDC address updated!' });
+                          setUsdcAddress('');
+                          refetchSettings();
+                        } catch (error) {
+                          setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to set USDC' });
+                        } finally {
+                          setIsSettingUSDC(false);
+                        }
+                      }}
+                      disabled={isSettingUSDC || !canSetUSDC}
+                      className="px-4 py-2 bg-pink-500/10 border border-pink-500/30 rounded text-pink-400 text-[10px] font-mono hover:bg-pink-500/20 transition disabled:opacity-50"
+                    >
+                      {isSettingUSDC ? 'SETTING...' : 'SET'}
                     </button>
                   </div>
                   <p className="text-[9px] text-gray-600 font-mono">ERC20 token used for payments</p>

@@ -1,6 +1,7 @@
 import { createPublicClient, http, parseEther, formatEther, encodeFunctionData, type Chain } from 'viem';
 import { base, mainnet } from 'viem/chains';
 import { CONTRACTS, ADDRESSES, getContracts, getAddresses } from '../frontend/contracts';
+import { getChainRpc } from '../config/networks';
 
 // Admin address for faucet management
 export const ADMIN_ADDRESS = process.env.NEXT_PUBLIC_ADMIN_ADDRESS || '0x3B89Ad8CC39900778aBCdcc22bc83cAC031A415B'; 
@@ -50,9 +51,10 @@ export function getNetworkName(chainId: number): string {
 // Create public client for reading contract state
 export function getPublicClient(chainId: number) {
   const chain = getChainConfig(chainId);
+  const rpcUrl = getChainRpc(chainId);
   return createPublicClient({
     chain,
-    transport: http(),
+    transport: http(rpcUrl),
   });
 }
 
@@ -106,11 +108,21 @@ export async function hasNFTByAddress(chainId: number, userAddress: string): Pro
   }
 
   try {
+    // Try hasNFTByAddress first (contract-specific)
     const result = await readContract(client, addresses.ZKPassportNFT, abi, 'hasNFTByAddress', [userAddress]);
     return Boolean(result);
-  } catch (error) {
-    console.error('Error checking NFT ownership:', error);
-    return false;
+  } catch (error: any) {
+    // Fallback to ERC721 balanceOf if hasNFTByAddress fails (e.g., RPC errors)
+    try {
+      const balance = await readContract(client, addresses.ZKPassportNFT, abi, 'balanceOf', [userAddress]);
+      return (balance as bigint) > 0n;
+    } catch (fallbackError: any) {
+      // If both fail, log but don't spam console with RPC rate limit errors
+      if (!fallbackError?.message?.includes('429') && !fallbackError?.message?.includes('503')) {
+        console.error('Error checking NFT ownership:', fallbackError);
+      }
+      return false;
+    }
   }
 }
 
@@ -165,8 +177,11 @@ export async function getTokenIdByAddress(chainId: number, userAddress: string):
     }
 
     return null;
-  } catch (error) {
-    console.error('Error getting tokenId:', error);
+  } catch (error: any) {
+    // Silent fail - RPC may be down/rate limited, not critical
+    if (error?.message && !error.message.includes('503') && !error.message.includes('429')) {
+      console.warn('Error getting tokenId:', error.message);
+    }
     return null;
   }
 }

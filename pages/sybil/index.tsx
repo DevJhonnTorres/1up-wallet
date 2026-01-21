@@ -5,30 +5,44 @@ import Layout from '../../components/shared/Layout';
 import Loading from '../../components/shared/Loading';
 import Navigation from '../../components/Navigation';
 import SybilVerification from '../../components/sybil/SybilVerification';
+import NFTCard from '../../components/sybil/NFTCard';
 import { getNetworkName, getAddressExplorerUrl, getContractAddresses } from '../../utils/contracts';
+import { useZKPassportNFT } from '../../hooks/useZKPassportNFT';
 
 export default function SybilPage() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
   const { wallets } = useWallets();
-  const [currentChainId, setCurrentChainId] = useState(8453); // Default to Base
+  const [currentChainId, setCurrentChainId] = useState(8453);
+  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verified' | 'minting' | 'minted' | 'failed' | 'rejected' | 'duplicate'>('idle');
+  const [uniqueIdentifier, setUniqueIdentifier] = useState<string | null>(null);
+  const [faceMatchPassed, setFaceMatchPassed] = useState(false);
+  const [personhoodVerified, setPersonhoodVerified] = useState(false);
 
   const userWallet = wallets?.[0];
   const addresses = getContractAddresses(currentChainId);
+  
+  // Get NFT data - simple hook like swag page
+  const {
+    alreadyHasNFT,
+    isLoading: isNFTLoading,
+    tokenId,
+    tokenData,
+    nftMetadata,
+    refreshNFTData,
+  } = useZKPassportNFT(currentChainId);
 
-  // Redirect to home if not authenticated
+  // Redirect if not authenticated
   useEffect(() => {
     if (ready && !authenticated) {
       router.push('/');
     }
   }, [ready, authenticated, router]);
 
-  // Show loading state while Privy initializes
   if (!ready) {
     return <Loading fullScreen={true} text="Loading..." />;
   }
 
-  // Don't render if not authenticated (will redirect)
   if (!authenticated) {
     return <Loading fullScreen={true} text="Redirecting..." />;
   }
@@ -41,7 +55,7 @@ export default function SybilPage() {
       />
       <Layout>
         <div className="space-y-4">
-          {/* Minimal Cypherpunk Header */}
+          {/* Header */}
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-1">
               <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
@@ -54,16 +68,37 @@ export default function SybilPage() {
             </p>
           </div>
 
-          {/* Sybil Verification Component */}
+          {/* NFT Card Section */}
+          <section className="mb-6">
+            <NFTCard
+              chainId={currentChainId}
+              alreadyHasNFT={alreadyHasNFT}
+              isLoading={isNFTLoading}
+              tokenId={tokenId}
+              tokenData={tokenData}
+              nftMetadata={nftMetadata}
+              onRefresh={refreshNFTData}
+            />
+          </section>
+
+          {/* Verification Component */}
           <SybilVerification
             key={currentChainId}
             chainId={currentChainId}
+            onVerificationStatusChange={(status, data) => {
+              setVerificationStatus(status);
+              if (data) {
+                setUniqueIdentifier(data.uniqueIdentifier || null);
+                setFaceMatchPassed(data.faceMatchPassed || false);
+                setPersonhoodVerified(data.personhoodVerified || false);
+              }
+            }}
             onMintSuccess={() => {
-              console.log('NFT minted successfully!');
+              setTimeout(() => refreshNFTData(), 2000);
             }}
           />
 
-          {/* Compact Info Row */}
+          {/* Info Row */}
           <div className="flex gap-2 text-[10px] font-mono text-gray-600 pt-2">
             <span className="flex items-center gap-1">
               <span className="text-cyan-500">▪</span> NO_KYC
@@ -78,7 +113,7 @@ export default function SybilPage() {
             </span>
           </div>
 
-          {/* Contract Link - Minimal */}
+          {/* Contract Link */}
           <div className="text-[10px] font-mono text-gray-700 pt-1 border-t border-gray-800">
             <a
               href={getAddressExplorerUrl(currentChainId, addresses.ZKPassportNFT)}

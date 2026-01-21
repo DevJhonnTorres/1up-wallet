@@ -5,6 +5,7 @@ import { useSwagAddresses } from '../utils/network';
 import { getChainRpc } from '../config/networks';
 import { getIPFSGatewayUrl } from '../lib/pinata';
 import Swag1155ABI from '../frontend/abis/Swag1155.json';
+import { RedemptionStatus } from './useSwagAdmin';
 
 export interface UserNFT {
   tokenId: bigint;
@@ -13,6 +14,7 @@ export interface UserNFT {
   description: string;
   image: string;
   attributes: Array<{ trait_type: string; value: string }>;
+  redemptionStatus: RedemptionStatus;
 }
 
 // Fetch all token IDs from the contract
@@ -134,33 +136,65 @@ export function useUserNFTs() {
       console.log('[useUserNFTs] User owns tokens:', balanceMap.size);
       if (balanceMap.size === 0) return [];
 
-      // Step 3: Fetch metadata only for tokens the user owns
+      // Step 3: Fetch metadata and redemption status for tokens the user owns
       const ownedTokenIds = Array.from(balanceMap.keys());
       const nfts: UserNFT[] = [];
+      const rpcUrl = getChainRpc(chainId);
+      const client = createPublicClient({ transport: http(rpcUrl) });
 
       for (const tokenIdStr of ownedTokenIds) {
         const tokenId = BigInt(tokenIdStr);
         const balance = balanceMap.get(tokenIdStr) || 0;
-        const metadata = await fetchTokenMetadata(swag1155, chainId, tokenId);
+        
+        // Fetch metadata and redemption status in parallel
+        // Both should be resilient to failures - we still show NFT even if metadata fails
+        const [metadata, redemptionStatus] = await Promise.all([
+          fetchTokenMetadata(swag1155, chainId, tokenId).catch((error) => {
+            console.error(`[useUserNFTs] Error fetching metadata for token ${tokenId}:`, error);
+            return null;
+          }),
+          (async () => {
+            try {
+              const status = await (client.readContract as any)({
+                address: swag1155 as `0x${string}`,
+                abi: Swag1155ABI,
+                functionName: 'getRedemptionStatus',
+                args: [tokenId, userAddress as `0x${string}`],
+              });
+              return Number(status) as RedemptionStatus;
+            } catch (error) {
+              console.error(`[useUserNFTs] Error fetching redemption status for token ${tokenId}:`, error);
+              return RedemptionStatus.NotRedeemed;
+            }
+          })(),
+        ]);
 
-        if (metadata) {
-          nfts.push({
-            tokenId,
-            balance,
-            name: metadata.name,
-            description: metadata.description,
-            image: metadata.image,
-            attributes: metadata.attributes,
-          });
-        }
+        // Always add NFT if user owns it (has balance > 0), even if metadata fetch failed
+        // Use fallback values for missing metadata
+        nfts.push({
+          tokenId,
+          balance,
+          name: metadata?.name || `Token #${tokenId}`,
+          description: metadata?.description || '',
+          image: metadata?.image || '/logo_eth_cali.png',
+          attributes: metadata?.attributes || [],
+          redemptionStatus,
+        });
       }
 
-      console.log('[useUserNFTs] Final NFTs:', nfts.length);
+      console.log('[useUserNFTs] Final NFTs:', nfts.length, nfts.map(n => ({
+        tokenId: n.tokenId.toString(),
+        name: n.name,
+        status: n.redemptionStatus
+      })));
       return nfts;
     },
     enabled: Boolean(userAddress && swag1155 && chainId),
     staleTime: 1000 * 60 * 2, // 2 minutes
     refetchOnWindowFocus: false,
+    refetchOnMount: true, // Always refetch when component mounts (e.g., after login)
+    retry: 2, // Retry failed requests
+    retryDelay: 1000, // Wait 1 second between retries
   });
 
   return {
