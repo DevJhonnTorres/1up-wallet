@@ -18,7 +18,6 @@ export function useVaultWhitelist() {
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const addToWhitelist = async (vaultId: number, userAddress: string) => {
     if (!faucetManager || !chainId) {
@@ -39,10 +38,7 @@ export function useVaultWhitelist() {
       to: faucetManager as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
     return result;
@@ -68,10 +64,7 @@ export function useVaultWhitelist() {
       to: faucetManager as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
     return result;
@@ -96,10 +89,7 @@ export function useVaultWhitelist() {
       to: faucetManager as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
     return result;
@@ -125,10 +115,7 @@ export function useVaultWhitelist() {
       to: faucetManager as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
     return result;
@@ -153,10 +140,7 @@ export function useVaultWhitelist() {
       to: faucetManager as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
     return result;

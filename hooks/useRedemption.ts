@@ -13,7 +13,6 @@ export function useRedeem(designAddress: string, chainId: number) {
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const redeem = async (tokenId: bigint) => {
     if (!designAddress || !chainId) {
@@ -34,10 +33,7 @@ export function useRedeem(designAddress: string, chainId: number) {
       to: designAddress as `0x${string}`,
       data,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     // Invalidate and refetch queries to refresh data immediately
     await queryClient.invalidateQueries({ queryKey: ['user-nfts'] });

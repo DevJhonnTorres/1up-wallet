@@ -29,9 +29,21 @@ const maskIdentifier = (uid: string): string => {
 
 const getIPFSImageUrl = (imageUrl: string): string => {
   if (!imageUrl) return '';
+
+  // Handle ipfs:// protocol
   if (imageUrl.startsWith('ipfs://')) {
-    return `https://gateway.pinata.cloud/ipfs/${imageUrl.replace('ipfs://', '')}`;
+    const cid = imageUrl.replace('ipfs://', '');
+    return `https://gateway.pinata.cloud/ipfs/${cid}`;
   }
+
+  // Handle IPFS gateway URLs that might need conversion
+  if (imageUrl.includes('/ipfs/')) {
+    const parts = imageUrl.split('/ipfs/');
+    const cid = parts[parts.length - 1];
+    return `https://gateway.pinata.cloud/ipfs/${cid}`;
+  }
+
+  // Already an HTTP/HTTPS URL
   return imageUrl;
 };
 
@@ -44,16 +56,20 @@ const NFTCard: React.FC<NFTCardProps> = ({
   nftMetadata,
   onRefresh,
 }) => {
-  // Always render - like swag page pattern
+  // Determine display state: prioritize showing NFT if minted, only show loading on initial fetch
+  const showNFTContent = alreadyHasNFT;
+  const showEmptyState = !isLoading && !alreadyHasNFT;
+  const showInitialLoading = isLoading && !alreadyHasNFT;
+
   return (
     <div className="bg-black/60 border border-green-500/40 rounded-lg p-4 space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full shadow-lg ${alreadyHasNFT ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-3 h-3 rounded-full shadow-lg ${alreadyHasNFT ? 'bg-green-500 animate-pulse' : isLoading ? 'bg-yellow-500 animate-pulse' : 'bg-gray-600'}`}></div>
           <div>
-            <h2 className={`text-sm font-bold font-mono tracking-wide ${alreadyHasNFT ? 'text-green-400' : 'text-gray-400'}`}>
-              {alreadyHasNFT ? 'VERIFIED' : 'NO_VERIFICATION'}
+            <h2 className={`text-sm font-bold font-mono tracking-wide ${alreadyHasNFT ? 'text-green-400' : isLoading ? 'text-yellow-400' : 'text-gray-400'}`}>
+              {alreadyHasNFT ? 'VERIFIED' : isLoading ? 'CHECKING...' : 'NO_VERIFICATION'}
             </h2>
             <p className="text-gray-600 text-[10px] font-mono">{getNetworkName(chainId).toUpperCase()}</p>
           </div>
@@ -62,24 +78,24 @@ const NFTCard: React.FC<NFTCardProps> = ({
           <button
             onClick={onRefresh}
             disabled={isLoading}
-            className="px-2 py-1 bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700 rounded text-gray-400 hover:text-cyan-400 font-mono text-[9px] transition-all disabled:opacity-50"
+            className={`px-2 py-1 bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700 rounded text-gray-400 hover:text-cyan-400 font-mono text-[9px] transition-all disabled:opacity-50 ${isLoading ? 'animate-spin' : ''}`}
             title="Refresh"
           >
-            {isLoading ? '⟳' : '↻'}
+            ↻
           </button>
         )}
       </div>
 
-      {/* Loading State */}
-      {isLoading && (
+      {/* Initial Loading State - Only show when we don't have NFT data yet */}
+      {showInitialLoading && (
         <div className="flex items-center justify-center py-4">
           <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
           <span className="ml-2 text-[10px] text-cyan-400 font-mono">CHECKING NFT...</span>
         </div>
       )}
 
-      {/* NFT Content - ALWAYS show when has NFT */}
-      {alreadyHasNFT && (
+      {/* NFT Content - ALWAYS show when has NFT (even during refetch) */}
+      {showNFTContent && (
         <>
           {/* NFT Details - Always show something */}
           <div className="space-y-1.5 text-[10px] font-mono">
@@ -118,15 +134,26 @@ const NFTCard: React.FC<NFTCardProps> = ({
 
           {/* NFT Image */}
           {nftMetadata?.image && (
-            <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20 relative aspect-square">
-              <Image 
-                src={getIPFSImageUrl(nftMetadata.image)} 
-                alt="ZKPassport NFT" 
+            <div className="mb-3 rounded-lg overflow-hidden border border-cyan-500/20 relative aspect-square bg-gray-900/50">
+              <Image
+                src={getIPFSImageUrl(nftMetadata.image)}
+                alt="ZKPassport NFT"
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 400px"
-                unoptimized={nftMetadata.image.startsWith('ipfs://')}
+                unoptimized={nftMetadata.image.includes('ipfs') || nftMetadata.image.includes('pinata')}
+                onError={(e) => {
+                  // Hide broken image
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
               />
+            </div>
+          )}
+
+          {/* Show image URL for debugging if no image displayed */}
+          {nftMetadata?.image && (
+            <div className="text-[8px] text-gray-700 font-mono truncate mb-2" title={nftMetadata.image}>
+              img: {nftMetadata.image.slice(0, 40)}...
             </div>
           )}
 
@@ -172,8 +199,8 @@ const NFTCard: React.FC<NFTCardProps> = ({
         </>
       )}
 
-      {/* Empty State - No NFT */}
-      {!isLoading && !alreadyHasNFT && (
+      {/* Empty State - No NFT (only show after loading completes with no NFT) */}
+      {showEmptyState && (
         <div className="text-center py-8">
           <div className="text-gray-600 text-[10px] font-mono mb-4">
             VERIFY YOUR IDENTITY TO MINT YOUR ZKPASSPORT NFT

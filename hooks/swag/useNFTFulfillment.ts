@@ -18,7 +18,6 @@ export function useMarkRedemptionFulfilled(designAddress: string, chainId: numbe
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const markRedemptionFulfilled = async (tokenId: bigint, owner: string) => {
     if (!designAddress || !chainId) {
@@ -76,10 +75,7 @@ export function useMarkRedemptionFulfilled(designAddress: string, chainId: numbe
       to: designAddress as `0x${string}`,
       data,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['admin-minted-nfts', designAddress] });
 

@@ -10,7 +10,6 @@ import QRScanner from './QRScanner';
 import { parseUnits, encodeFunctionData } from 'viem';
 import { base, mainnet, optimism } from 'viem/chains';
 import { useTokenPrices } from '../../hooks/useTokenPrices';
-import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { getTokenAddresses } from '../../utils/network';
 import ReceiveModal from './ReceiveModal';
 import { useUserNFTs } from '../../hooks/useUserNFTs';
@@ -37,7 +36,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   const { sendTransaction } = useSendTransaction();
   const { fundWallet } = useFundWallet();
   const { getPriceForToken } = useTokenPrices();
-  const { wallet: activeWallet, isEmbeddedWallet } = useActiveWallet();
+  const activeWallet = wallets?.[0];
 
   // States for send token modal
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
@@ -135,7 +134,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
 
   // Handle fund wallet with Apple Pay / Google Pay
   const handleFundWallet = async () => {
-    if (!wallet.address || !isEmbeddedWallet) return;
+    if (!wallet.address) return;
 
     setIsFunding(true);
     try {
@@ -188,25 +187,22 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   
   // Handle sending tokens
   const handleSendToken = async (recipient: string, amount: string, tokenType: string) => {
-    // Use active wallet from useActiveWallet hook (the wallet user logged in with)
     const walletToUse = activeWallet || privyWallet;
-    
+
     if (!walletToUse) {
       logger.error('No wallet found');
       return;
     }
-    
-    const walletIsEmbedded = walletToUse.walletClientType === 'privy';
-    
+
     logger.tx('Sending transaction', {
       hash: undefined,
       chainId,
-      status: walletIsEmbedded ? 'sponsored' : 'user-pays-gas'
+      status: 'pending'
     });
-    
+
     setIsSendingTx(true);
     setTxHash(null);
-    
+
     try {
       const transferAbi = [{
         inputs: [
@@ -219,91 +215,38 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         type: 'function'
       }] as const;
 
-      if (walletIsEmbedded) {
-        // Embedded wallet - use Privy's sendTransaction with gas sponsorship
-        if (tokenType === 'ETH') {
-          const value = parseUnits(amount, 18);
-          const result = await sendTransaction(
-            {
-              to: recipient as `0x${string}`,
-              value,
-            },
-            {
-              sponsor: true, // Always sponsor for embedded wallets
-            } as any
-          );
-          setTxHash(result.hash);
-        } else {
-          // ERC20 token transfer
-          const tokenAddress = getTokenAddress(tokenType);
-          if (!tokenAddress) {
-            throw new Error(`Token ${tokenType} not supported on this network`);
-          }
-          
-          const decimals = tokenType === 'USDT' || tokenType === 'USDC' || tokenType === 'EURC' ? 6 : 18;
-          const tokenAmount = parseUnits(amount, decimals);
-          const data = encodeFunctionData({
-            abi: transferAbi,
-            functionName: 'transfer',
-            args: [recipient as `0x${string}`, tokenAmount]
-          });
-          
-          const result = await sendTransaction(
-            {
-              to: tokenAddress as `0x${string}`,
-              data,
-            },
-            {
-              sponsor: true, // Always sponsor for embedded wallets
-            } as any
-          );
-          setTxHash(result.hash);
-        }
+      if (tokenType === 'ETH') {
+        const value = parseUnits(amount, 18);
+        const result = await sendTransaction({
+          to: recipient as `0x${string}`,
+          value,
+        });
+        setTxHash(result.hash);
       } else {
-        // External wallet (MetaMask, etc.) - use provider directly, user pays gas
-        const provider = await walletToUse.getEthereumProvider();
-        
-        if (tokenType === 'ETH') {
-          const value = parseUnits(amount, 18);
-          const txHash = await provider.request({
-            method: 'eth_sendTransaction',
-            params: [{
-              from: walletToUse.address,
-              to: recipient,
-              value: `0x${value.toString(16)}`,
-            }],
-          });
-          setTxHash(txHash as string);
-        } else {
-          // ERC20 token transfer
-          const tokenAddress = getTokenAddress(tokenType);
-          if (!tokenAddress) {
-            throw new Error(`Token ${tokenType} not supported on this network`);
-          }
-          
-          const decimals = tokenType === 'USDT' || tokenType === 'USDC' || tokenType === 'EURC' ? 6 : 18;
-          const tokenAmount = parseUnits(amount, decimals);
-          const data = encodeFunctionData({
-            abi: transferAbi,
-            functionName: 'transfer',
-            args: [recipient as `0x${string}`, tokenAmount]
-          });
-          
-          const txHash = await provider.request({
-            method: 'eth_sendTransaction',
-            params: [{
-              from: walletToUse.address,
-              to: tokenAddress,
-              data,
-            }],
-          });
-          setTxHash(txHash as string);
+        // ERC20 token transfer
+        const tokenAddress = getTokenAddress(tokenType);
+        if (!tokenAddress) {
+          throw new Error(`Token ${tokenType} not supported on this network`);
         }
+
+        const decimals = tokenType === 'USDT' || tokenType === 'USDC' || tokenType === 'EURC' ? 6 : 18;
+        const tokenAmount = parseUnits(amount, decimals);
+        const data = encodeFunctionData({
+          abi: transferAbi,
+          functionName: 'transfer',
+          args: [recipient as `0x${string}`, tokenAmount]
+        });
+
+        const result = await sendTransaction({
+          to: tokenAddress as `0x${string}`,
+          data,
+        });
+        setTxHash(result.hash);
       }
-      
+
       // Refresh balances after successful transaction
       onRefresh();
-      
+
     } catch (error) {
       logger.error('Error sending transaction', error);
       throw error;
@@ -353,8 +296,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         </div>
 
         {/* Quick Actions - Mobile First */}
-        {isEmbeddedWallet && (
-          <div className="quick-actions">
+        <div className="quick-actions">
             <button
               className="quick-action-btn fund-btn"
               onClick={handleFundWallet}
@@ -408,7 +350,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
               <span>Refresh</span>
             </button>
           </div>
-        )}
       </div>
 
       {/* Wallet Address Card - Compact */}
@@ -448,15 +389,13 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
                 </svg>
               </a>
             )}
-            {isEmbeddedWallet && (
-              <button className="action-icon-btn" onClick={handleExportWallet} title="Export wallet">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-              </button>
-            )}
+            <button className="action-icon-btn" onClick={handleExportWallet} title="Export wallet">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>

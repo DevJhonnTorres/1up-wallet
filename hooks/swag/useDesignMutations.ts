@@ -17,7 +17,6 @@ export function useUpdateDesignInfo(designAddress: string, chainId: number) {
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const updateDesignInfo = async (designInfo: DesignInfo) => {
     if (!designAddress || !chainId) {
@@ -38,10 +37,7 @@ export function useUpdateDesignInfo(designAddress: string, chainId: number) {
       to: designAddress as `0x${string}`,
       data,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['design-info', designAddress] });
 
@@ -63,7 +59,6 @@ export function useUpdateDesignDiscountConfig(designAddress: string, chainId: nu
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const updateDiscountConfig = async (discountConfig: DiscountConfig) => {
     if (!designAddress || !chainId) {
@@ -84,10 +79,7 @@ export function useUpdateDesignDiscountConfig(designAddress: string, chainId: nu
       to: designAddress as `0x${string}`,
       data,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['design-discount-config', designAddress] });
 
@@ -109,7 +101,6 @@ export function useSetDesignActive(designAddress: string, chainId: number) {
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const setDesignActive = async (active: boolean) => {
     if (!designAddress || !chainId) {
@@ -130,10 +121,7 @@ export function useSetDesignActive(designAddress: string, chainId: number) {
       to: designAddress as `0x${string}`,
       data,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['design-info', designAddress] });
 
@@ -155,7 +143,6 @@ export function useSetDesignPaymentToken(designAddress: string, chainId: number)
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const setPaymentToken = async (paymentTokenAddress: string) => {
     if (!designAddress || !chainId) {
@@ -176,10 +163,7 @@ export function useSetDesignPaymentToken(designAddress: string, chainId: number)
       to: designAddress as `0x${string}`,
       data,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['design-info', designAddress] });
 
@@ -201,7 +185,6 @@ export function useSetDesignPrice(designAddress: string, chainId: number) {
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const setPrice = async (price: number) => {
     if (!designAddress || !chainId) {
@@ -224,10 +207,7 @@ export function useSetDesignPrice(designAddress: string, chainId: number) {
       to: designAddress as `0x${string}`,
       data,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['design-info', designAddress] });
 
@@ -249,7 +229,6 @@ export function useSetDesignTotalSupply(designAddress: string, chainId: number) 
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const setTotalSupply = async (totalSupply: number) => {
     if (!designAddress || !chainId) {
@@ -270,10 +249,7 @@ export function useSetDesignTotalSupply(designAddress: string, chainId: number) 
       to: designAddress as `0x${string}`,
       data,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['design-info', designAddress] });
 

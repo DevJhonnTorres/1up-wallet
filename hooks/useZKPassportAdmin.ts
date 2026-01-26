@@ -138,7 +138,6 @@ export function useUpdateZKPassportMetadata() {
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const updateMetadata = async (metadata: ZKPassportMetadata) => {
     if (!zkpassport || !chainId) {
@@ -159,10 +158,7 @@ export function useUpdateZKPassportMetadata() {
       to: zkpassport as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['zkpassport-metadata'] });
 
@@ -184,10 +180,7 @@ export function useUpdateZKPassportMetadata() {
       to: zkpassport as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['zkpassport-metadata'] });
     return result;
@@ -208,10 +201,7 @@ export function useUpdateZKPassportMetadata() {
       to: zkpassport as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['zkpassport-metadata'] });
     return result;
@@ -232,10 +222,7 @@ export function useUpdateZKPassportMetadata() {
       to: zkpassport as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['zkpassport-metadata'] });
     return result;

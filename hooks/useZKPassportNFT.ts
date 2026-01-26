@@ -73,10 +73,59 @@ export function useZKPassportNFT(chainId: number) {
             } else if (tokenURI.startsWith('http')) {
               const response = await fetch(tokenURI);
               nftMetadata = await response.json();
+            } else if (tokenURI.startsWith('ipfs://')) {
+              // Handle IPFS URIs for tokenURI
+              const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${tokenURI.replace('ipfs://', '')}`;
+              const response = await fetch(ipfsUrl);
+              nftMetadata = await response.json();
             }
           } catch (err) {
             // Silent fail - metadata not critical
             logger.warn('Failed to parse token URI:', err);
+          }
+        }
+
+        // Fallback: fetch raw metadata directly from contract storage if tokenURI parsing failed
+        if (!nftMetadata?.image) {
+          try {
+            const [rawImageURI, rawDescription, rawExternalURL] = await Promise.all([
+              client.readContract({
+                address: addresses.zkpassport as `0x${string}`,
+                abi: ZKPassportNFTABI as any,
+                functionName: 'nftImageURI',
+              }),
+              client.readContract({
+                address: addresses.zkpassport as `0x${string}`,
+                abi: ZKPassportNFTABI as any,
+                functionName: 'nftDescription',
+              }),
+              client.readContract({
+                address: addresses.zkpassport as `0x${string}`,
+                abi: ZKPassportNFTABI as any,
+                functionName: 'nftExternalURL',
+              }),
+            ]);
+
+            // Create metadata from direct contract reads if we don't have parsed metadata
+            if (!nftMetadata) {
+              nftMetadata = {};
+            }
+
+            // Use direct values as fallback
+            if (!nftMetadata.image && rawImageURI) {
+              nftMetadata.image = String(rawImageURI);
+            }
+            if (!nftMetadata.description && rawDescription) {
+              nftMetadata.description = String(rawDescription);
+            }
+            if (!nftMetadata.external_url && rawExternalURL) {
+              nftMetadata.external_url = String(rawExternalURL);
+            }
+            if (!nftMetadata.name) {
+              nftMetadata.name = 'ZKPassport NFT';
+            }
+          } catch (fallbackErr) {
+            logger.warn('Failed to fetch fallback metadata:', fallbackErr);
           }
         }
 
@@ -98,15 +147,17 @@ export function useZKPassportNFT(chainId: number) {
     retry: 2,
   });
 
-  const hasNFT = query.data !== null;
+  // Only consider hasNFT true when we have actual data (not undefined during loading)
+  const hasNFT = Boolean(query.data);
 
   return {
     alreadyHasNFT: hasNFT,
     isLoading: query.isLoading,
-    tokenId: query.data?.tokenId || null,
-    tokenData: query.data?.tokenData || null,
-    nftMetadata: query.data?.nftMetadata || null,
-    tokenURI: query.data?.tokenURI || null,
+    isFetched: query.isFetched,
+    tokenId: query.data?.tokenId ?? null,
+    tokenData: query.data?.tokenData ?? null,
+    nftMetadata: query.data?.nftMetadata ?? null,
+    tokenURI: query.data?.tokenURI ?? null,
     refreshNFTData: query.refetch,
     error: query.error instanceof Error ? query.error.message : null,
   };

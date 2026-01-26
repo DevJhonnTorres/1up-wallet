@@ -21,7 +21,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   
   // Define metadata constants
   const title = 'ETH CALI - Web3 Wallet';
-  const description = 'A secure and easy-to-use Ethereum wallet to get into web3 easily. Fully open-sourced with gas fees sponsored by ETH CALI.';
+  const description = 'Fully open-sourced Web3 wallet for the ETH CALI community.';
   const siteUrl = 'https://wallet.ethcali.org';
   const imageUrl = `${siteUrl}/banner_ethcali.jpg`;
 

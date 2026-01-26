@@ -244,15 +244,10 @@ export function useZKPassportVerification(chainId: number, onMintSuccess?: () =>
         args: [uniqueIdentifier, faceMatchPassed, personhoodVerified || true],
       });
 
-      const result = await sendTransaction(
-        {
-          to: nftContractAddress as `0x${string}`,
-          data: mintTxData,
-        },
-        {
-          sponsor: true,
-        } as any
-      );
+      const result = await sendTransaction({
+        to: nftContractAddress as `0x${string}`,
+        data: mintTxData,
+      });
 
       setMintTxHash(result.hash);
       setStatus('minted');

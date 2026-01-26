@@ -300,7 +300,6 @@ export function useMintDesign() {
   const { sendTransaction } = useSendTransaction();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   // Helper to get chainId from wallet
   const getWalletChainId = (): number => {
@@ -392,10 +391,7 @@ export function useMintDesign() {
         to: paymentTokenChecksummed,
         data: approveData,
         chainId,
-      }, {
-        address: activeWallet.address,
-        sponsor: isEmbedded,
-      } as any);
+      });
 
       // Wait for approval transaction to be confirmed
       if (approveResult?.hash) {
@@ -420,10 +416,7 @@ export function useMintDesign() {
       to: designAddressChecksummed,
       data: mintData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
   };
 
   return {
@@ -441,7 +434,6 @@ export function useMintDesignBatch() {
   const { sendTransaction } = useSendTransaction();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   // Helper to get chainId from wallet
   const getWalletChainId = (): number => {
@@ -537,10 +529,7 @@ export function useMintDesignBatch() {
         to: paymentTokenChecksummed,
         data: approveData,
         chainId,
-      }, {
-        address: activeWallet.address,
-        sponsor: isEmbedded,
-      } as any);
+      });
 
       // Wait for approval transaction to be confirmed
       if (approveResult?.hash) {
@@ -565,10 +554,7 @@ export function useMintDesignBatch() {
       to: designAddressChecksummed,
       data: mintBatchData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
   };
 
   return {

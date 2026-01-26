@@ -28,7 +28,7 @@ interface UseTokenTransferResult {
 
 export function useTokenTransfer(chainId?: number): UseTokenTransferResult {
   const { sendTransaction } = useSendTransaction();
-  const { wallet, isEmbeddedWallet } = useActiveWallet();
+  const { wallet } = useActiveWallet();
 
   const [isSending, setIsSending] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
@@ -64,84 +64,33 @@ export function useTokenTransfer(chainId?: number): UseTokenTransferResult {
     try {
       let hash: string;
 
-      if (isEmbeddedWallet) {
-        // Embedded wallet - use Privy's sendTransaction with gas sponsorship
-        if (tokenType === 'ETH') {
-          const value = parseUnits(amount, 18);
-          const result = await sendTransaction(
-            {
-              to: recipient as `0x${string}`,
-              value,
-            },
-            {
-              sponsor: true,
-            } as any
-          );
-          hash = result.hash;
-        } else {
-          // ERC20 token transfer
-          const tokenAddress = getTokenAddress(tokenType);
-          if (!tokenAddress) {
-            throw new Error(`Token ${tokenType} not supported on this network`);
-          }
-
-          const decimals = getDecimals(tokenType);
-          const tokenAmount = parseUnits(amount, decimals);
-          const data = encodeFunctionData({
-            abi: ERC20_TRANSFER_ABI,
-            functionName: 'transfer',
-            args: [recipient as `0x${string}`, tokenAmount]
-          });
-
-          const result = await sendTransaction(
-            {
-              to: tokenAddress as `0x${string}`,
-              data,
-            },
-            {
-              sponsor: true,
-            } as any
-          );
-          hash = result.hash;
-        }
+      if (tokenType === 'ETH') {
+        const value = parseUnits(amount, 18);
+        const result = await sendTransaction({
+          to: recipient as `0x${string}`,
+          value,
+        });
+        hash = result.hash;
       } else {
-        // External wallet - use provider directly
-        const provider = await wallet.getEthereumProvider();
-
-        if (tokenType === 'ETH') {
-          const value = parseUnits(amount, 18);
-          hash = await provider.request({
-            method: 'eth_sendTransaction',
-            params: [{
-              from: wallet.address,
-              to: recipient,
-              value: `0x${value.toString(16)}`,
-            }],
-          }) as string;
-        } else {
-          // ERC20 token transfer
-          const tokenAddress = getTokenAddress(tokenType);
-          if (!tokenAddress) {
-            throw new Error(`Token ${tokenType} not supported on this network`);
-          }
-
-          const decimals = getDecimals(tokenType);
-          const tokenAmount = parseUnits(amount, decimals);
-          const data = encodeFunctionData({
-            abi: ERC20_TRANSFER_ABI,
-            functionName: 'transfer',
-            args: [recipient as `0x${string}`, tokenAmount]
-          });
-
-          hash = await provider.request({
-            method: 'eth_sendTransaction',
-            params: [{
-              from: wallet.address,
-              to: tokenAddress,
-              data,
-            }],
-          }) as string;
+        // ERC20 token transfer
+        const tokenAddress = getTokenAddress(tokenType);
+        if (!tokenAddress) {
+          throw new Error(`Token ${tokenType} not supported on this network`);
         }
+
+        const decimals = getDecimals(tokenType);
+        const tokenAmount = parseUnits(amount, decimals);
+        const data = encodeFunctionData({
+          abi: ERC20_TRANSFER_ABI,
+          functionName: 'transfer',
+          args: [recipient as `0x${string}`, tokenAmount]
+        });
+
+        const result = await sendTransaction({
+          to: tokenAddress as `0x${string}`,
+          data,
+        });
+        hash = result.hash;
       }
 
       setTxHash(hash);
@@ -153,7 +102,7 @@ export function useTokenTransfer(chainId?: number): UseTokenTransferResult {
     } finally {
       setIsSending(false);
     }
-  }, [wallet, isEmbeddedWallet, sendTransaction, getTokenAddress]);
+  }, [wallet, sendTransaction, getTokenAddress]);
 
   const clearTxHash = useCallback(() => {
     setTxHash(null);

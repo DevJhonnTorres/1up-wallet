@@ -8,7 +8,7 @@ export function AdminManagement() {
   const { swag1155, chainId } = useSwagAddresses();
   const { wallets } = useWallets();
   const { sendTransaction } = useSendTransaction();
-  
+
   const [newAdmin, setNewAdmin] = useState('');
   const [removeAdminAddr, setRemoveAdminAddr] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -16,7 +16,6 @@ export function AdminManagement() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,10 +39,7 @@ export function AdminManagement() {
         to: swag1155 as `0x${string}`,
         data,
         chainId,
-      }, {
-        address: activeWallet.address,
-        sponsor: isEmbedded,
-      } as any);
+      });
 
       setMessage({ type: 'success', text: `Admin added: ${newAdmin.slice(0, 8)}...` });
       setNewAdmin('');
@@ -76,10 +72,7 @@ export function AdminManagement() {
         to: swag1155 as `0x${string}`,
         data,
         chainId,
-      }, {
-        address: activeWallet.address,
-        sponsor: isEmbedded,
-      } as any);
+      });
 
       setMessage({ type: 'success', text: `Admin removed: ${removeAdminAddr.slice(0, 8)}...` });
       setRemoveAdminAddr('');
@@ -99,8 +92,8 @@ export function AdminManagement() {
 
       {message && (
         <div className={`p-3 rounded-lg text-sm ${
-          message.type === 'success' 
-            ? 'bg-emerald-500/10 border border-emerald-500/40 text-emerald-300' 
+          message.type === 'success'
+            ? 'bg-emerald-500/10 border border-emerald-500/40 text-emerald-300'
             : 'bg-red-500/10 border border-red-500/40 text-red-300'
         }`}>
           {message.text}

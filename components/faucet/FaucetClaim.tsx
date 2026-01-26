@@ -152,15 +152,10 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
 
       const txData = getClaimTxData(chainId, vaultId);
 
-      const result = await sendTransaction(
-        {
-          to: txData.to as `0x${string}`,
-          data: txData.data,
-        },
-        {
-          sponsor: true,
-        } as any
-      );
+      const result = await sendTransaction({
+        to: txData.to as `0x${string}`,
+        data: txData.data,
+      });
 
       setTxHash(result.hash);
 
@@ -182,7 +177,7 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
   const getVaultEligibilityStatus = (vault: any) => {
     if (isPaused) return { canClaim: false, code: 'PAUSED', message: 'Faucet is paused' };
     if (!hasNFT) return { canClaim: false, code: 'NO_NFT', message: 'ZKPASSPORT required' };
-    
+
     const eligibility = vaultEligibility[vault.id];
     if (eligibility) {
       if (!eligibility.canClaim) {
@@ -298,8 +293,8 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
                 )}
                 <div className="flex gap-2 text-[9px] font-mono">
                   <span className={`px-2 py-0.5 rounded ${
-                    isReturnable 
-                      ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30' 
+                    isReturnable
+                      ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
                       : 'bg-purple-500/10 text-purple-400 border border-purple-500/30'
                   }`}>
                     {isReturnable ? 'RETURNABLE' : 'NON-RETURNABLE'}

@@ -18,7 +18,6 @@ export function useCreateVault() {
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const createVault = async (data: VaultFormData) => {
     if (!faucetManager || !chainId) {
@@ -41,10 +40,7 @@ export function useCreateVault() {
       to: faucetManager as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
 
@@ -67,7 +63,6 @@ export function useUpdateVault() {
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const updateVault = async (data: VaultUpdateData) => {
     if (!faucetManager || !chainId) {
@@ -90,10 +85,7 @@ export function useUpdateVault() {
       to: faucetManager as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
 
@@ -139,10 +131,7 @@ export function useVaultDeposit() {
       data: txData,
       value: amountWei,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: false,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
 
@@ -165,7 +154,6 @@ export function useVaultWithdraw() {
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const withdraw = async (vaultId: number, amountEth: string) => {
     if (!faucetManager || !chainId) {
@@ -188,10 +176,7 @@ export function useVaultWithdraw() {
       to: faucetManager as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
 
@@ -214,7 +199,6 @@ export function useFaucetPause() {
   const queryClient = useQueryClient();
 
   const activeWallet = wallets?.[0];
-  const isEmbedded = activeWallet?.walletClientType === 'privy';
 
   const pause = async () => {
     if (!faucetManager || !chainId) {
@@ -235,10 +219,7 @@ export function useFaucetPause() {
       to: faucetManager as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['faucet-paused'] });
 
@@ -264,10 +245,7 @@ export function useFaucetPause() {
       to: faucetManager as `0x${string}`,
       data: txData,
       chainId,
-    }, {
-      address: activeWallet.address,
-      sponsor: isEmbedded,
-    } as any);
+    });
 
     queryClient.invalidateQueries({ queryKey: ['faucet-paused'] });
 
