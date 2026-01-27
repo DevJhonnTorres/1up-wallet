@@ -48,6 +48,15 @@ export function useENSMint() {
       setIsSuccess(true);
       logger.info('[useENSMint] Success', { hash: result.hash });
 
+      // Cache the subdomain in localStorage for persistent lookup
+      try {
+        const cacheKey = `ens-subdomain-${owner.toLowerCase()}`;
+        localStorage.setItem(cacheKey, label);
+        logger.info('[useENSMint] Cached subdomain in localStorage', { label, owner });
+      } catch (cacheError) {
+        logger.warn('[useENSMint] Failed to cache subdomain', cacheError);
+      }
+
       return result.hash;
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Mint failed');

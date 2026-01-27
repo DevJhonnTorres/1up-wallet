@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Wallet, TokenBalance } from '../../types/index';
 import Loading from '../../components/shared/Loading';
 import { getTokenLogoUrl, formatTokenBalance } from '../../utils/tokenUtils';
-import { usePrivy, useWallets, useSendTransaction, useFundWallet } from '@privy-io/react-auth';
+import { usePrivy, useWallets, useSendTransaction, useFundWallet, User } from '@privy-io/react-auth';
 import SendTokenModal from './SendTokenModal';
 import QRScanner from './QRScanner';
 import { parseUnits, encodeFunctionData } from 'viem';
@@ -32,7 +32,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   onRefresh,
   chainId,
 }) => {
-  const { exportWallet } = usePrivy();
+  const { exportWallet, user } = usePrivy();
   const { wallets } = useWallets();
   const { sendTransaction } = useSendTransaction();
   const { fundWallet } = useFundWallet();
@@ -300,6 +300,33 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Get user's login method info
+  const getUserLoginInfo = () => {
+    if (!user) return null;
+
+    // Check for email
+    const emailAccount = user.linkedAccounts?.find(
+      (account) => account.type === 'email'
+    );
+
+    // Check for passkey
+    const passkeyAccount = user.linkedAccounts?.find(
+      (account) => account.type === 'passkey'
+    );
+
+    if (emailAccount && 'address' in emailAccount) {
+      return { type: 'email', value: emailAccount.address as string };
+    }
+
+    if (passkeyAccount) {
+      return { type: 'passkey', value: 'Passkey Authentication' };
+    }
+
+    return null;
+  };
+
+  const loginInfo = getUserLoginInfo();
+
   return (
     <div className="wallet-info">
       {/* Total Portfolio Value - Hero Section */}
@@ -412,6 +439,34 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Login Method Info */}
+        {loginInfo && (
+          <div className="login-info-row">
+            <div className="login-info-icon">
+              {loginInfo.type === 'email' ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="M22 6l-10 7L2 6" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2a5 5 0 0 1 5 5v3H7V7a5 5 0 0 1 5-5z" />
+                  <rect x="3" y="10" width="18" height="12" rx="2" />
+                  <circle cx="12" cy="16" r="1" />
+                </svg>
+              )}
+            </div>
+            <div className="login-info-text">
+              <span className="login-info-label">
+                {loginInfo.type === 'email' ? 'Signed in with email' : 'Signed in with passkey'}
+              </span>
+              <span className="login-info-value">
+                {loginInfo.type === 'email' ? loginInfo.value : 'Biometric / Security Key'}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ENS Subdomain Section */}
@@ -767,7 +822,56 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           width: 16px;
           height: 16px;
         }
-        
+
+        /* Login Info Row */
+        .login-info-row {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin-top: 0.875rem;
+          padding-top: 0.875rem;
+          border-top: 1px solid rgba(75, 85, 99, 0.3);
+        }
+
+        .login-info-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          background: rgba(6, 182, 212, 0.15);
+          border-radius: 8px;
+          color: #06b6d4;
+          flex-shrink: 0;
+        }
+
+        .login-info-icon svg {
+          width: 16px;
+          height: 16px;
+        }
+
+        .login-info-text {
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+
+        .login-info-label {
+          font-size: 0.6875rem;
+          font-weight: 500;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .login-info-value {
+          font-size: 0.8125rem;
+          color: #e5e7eb;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
         .balance-section {
           margin-top: 0;
         }

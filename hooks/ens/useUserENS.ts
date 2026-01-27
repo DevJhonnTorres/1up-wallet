@@ -28,6 +28,16 @@ export function useUserENS(address: string | undefined): UserENSResult {
     const fetchUserENS = async () => {
       setIsLoading(true);
       try {
+        // Check localStorage first for cached subdomain
+        const cacheKey = `ens-subdomain-${address.toLowerCase()}`;
+        const cachedSubdomain = localStorage.getItem(cacheKey);
+        if (cachedSubdomain) {
+          logger.info('[useUserENS] Found cached subdomain', { subdomain: cachedSubdomain, address });
+          setSubdomain(cachedSubdomain);
+          setIsLoading(false);
+          return;
+        }
+
         const client = createPublicClient({
           chain: base,
           transport: http(getRpcUrl(CHAIN_IDS.BASE)),
@@ -40,7 +50,7 @@ export function useUserENS(address: string | undefined): UserENSResult {
           return;
         }
 
-        // Query NameRegistered events for this owner
+        // Query NameRegistered events for this owner (only recent blocks due to RPC limits)
         // Use a recent block range to avoid RPC limits (most RPCs limit to ~50k blocks)
         const currentBlock = await client.getBlockNumber();
         const fromBlock = currentBlock > 45000n ? currentBlock - 45000n : 0n;
@@ -84,8 +94,15 @@ export function useUserENS(address: string | undefined): UserENSResult {
                 const stringDataHex = inputData.slice(stringOffset * 2 + 64, stringOffset * 2 + 64 + stringLength * 2);
                 const label = Buffer.from(stringDataHex, 'hex').toString('utf8');
 
+                // Cache in localStorage for future lookups
+                try {
+                  localStorage.setItem(cacheKey, label);
+                } catch {
+                  // Ignore storage errors
+                }
+
                 setSubdomain(label);
-                logger.info('[useUserENS] Found subdomain', { label, address });
+                logger.info('[useUserENS] Found subdomain from events', { label, address });
                 return;
               } catch (decodeError) {
                 logger.error('[useUserENS] Failed to decode label from tx', decodeError);
