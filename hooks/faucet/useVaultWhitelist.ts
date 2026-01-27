@@ -34,11 +34,14 @@ export function useVaultWhitelist() {
       args: [vaultId, userAddress as `0x${string}`],
     });
 
-    const result = await sendTransaction({
-      to: faucetManager as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: faucetManager as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
     return result;
@@ -60,11 +63,14 @@ export function useVaultWhitelist() {
       args: [vaultId, addresses],
     });
 
-    const result = await sendTransaction({
-      to: faucetManager as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: faucetManager as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
     return result;
@@ -85,11 +91,14 @@ export function useVaultWhitelist() {
       args: [vaultId, userAddress as `0x${string}`],
     });
 
-    const result = await sendTransaction({
-      to: faucetManager as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: faucetManager as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
     return result;
@@ -111,11 +120,14 @@ export function useVaultWhitelist() {
       args: [vaultId, addresses],
     });
 
-    const result = await sendTransaction({
-      to: faucetManager as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: faucetManager as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
     return result;
@@ -136,11 +148,14 @@ export function useVaultWhitelist() {
       args: [vaultId, enabled],
     });
 
-    const result = await sendTransaction({
-      to: faucetManager as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: faucetManager as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
     return result;

@@ -387,11 +387,14 @@ export function useMintDesign() {
         args: [designAddressChecksummed, price],
       });
 
-      const approveResult = await sendTransaction({
-        to: paymentTokenChecksummed,
-        data: approveData,
-        chainId,
-      });
+      const approveResult = await sendTransaction(
+        {
+          to: paymentTokenChecksummed,
+          data: approveData,
+          chainId,
+        },
+        { sponsor: true }
+      );
 
       // Wait for approval transaction to be confirmed
       if (approveResult?.hash) {
@@ -412,11 +415,14 @@ export function useMintDesign() {
       args: [size, hasPoapDiscount],
     });
 
-    return sendTransaction({
-      to: designAddressChecksummed,
-      data: mintData,
-      chainId,
-    });
+    return sendTransaction(
+      {
+        to: designAddressChecksummed,
+        data: mintData,
+        chainId,
+      },
+      { sponsor: true }
+    );
   };
 
   return {
@@ -525,11 +531,14 @@ export function useMintDesignBatch() {
         args: [designAddressChecksummed, totalPrice],
       });
 
-      const approveResult = await sendTransaction({
-        to: paymentTokenChecksummed,
-        data: approveData,
-        chainId,
-      });
+      const approveResult = await sendTransaction(
+        {
+          to: paymentTokenChecksummed,
+          data: approveData,
+          chainId,
+        },
+        { sponsor: true }
+      );
 
       // Wait for approval transaction to be confirmed
       if (approveResult?.hash) {
@@ -550,11 +559,14 @@ export function useMintDesignBatch() {
       args: [sizes, hasPoapDiscount],
     });
 
-    return sendTransaction({
-      to: designAddressChecksummed,
-      data: mintBatchData,
-      chainId,
-    });
+    return sendTransaction(
+      {
+        to: designAddressChecksummed,
+        data: mintBatchData,
+        chainId,
+      },
+      { sponsor: true }
+    );
   };
 
   return {

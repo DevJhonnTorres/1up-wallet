@@ -223,11 +223,14 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
 
       if (tokenType === 'ETH') {
         const value = parseUnits(amount, 18);
-        const result = await sendTransaction({
-          to: recipient as `0x${string}`,
-          value,
-          chainId,
-        });
+        const result = await sendTransaction(
+          {
+            to: recipient as `0x${string}`,
+            value,
+            chainId,
+          },
+          { sponsor: true }
+        );
         setTxHash(result.hash);
       } else {
         // ERC20 token transfer
@@ -244,11 +247,14 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           args: [recipient as `0x${string}`, tokenAmount]
         });
 
-        const result = await sendTransaction({
-          to: tokenAddress as `0x${string}`,
-          data,
-          chainId,
-        });
+        const result = await sendTransaction(
+          {
+            to: tokenAddress as `0x${string}`,
+            data,
+            chainId,
+          },
+          { sponsor: true }
+        );
         setTxHash(result.hash);
       }
 

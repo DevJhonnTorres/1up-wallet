@@ -71,11 +71,14 @@ export function useMarkRedemptionFulfilled(designAddress: string, chainId: numbe
       args: [tokenId, owner as `0x${string}`],
     });
 
-    const result = await sendTransaction({
-      to: designAddress as `0x${string}`,
-      data,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: designAddress as `0x${string}`,
+        data,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['admin-minted-nfts', designAddress] });
 

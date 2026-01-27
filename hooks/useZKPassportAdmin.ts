@@ -154,11 +154,14 @@ export function useUpdateZKPassportMetadata() {
       args: [metadata.imageURI, metadata.description, metadata.externalURL, metadata.useIPFS],
     });
 
-    const result = await sendTransaction({
-      to: zkpassport as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: zkpassport as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['zkpassport-metadata'] });
 
@@ -176,11 +179,14 @@ export function useUpdateZKPassportMetadata() {
       args: [imageURI],
     });
 
-    const result = await sendTransaction({
-      to: zkpassport as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: zkpassport as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['zkpassport-metadata'] });
     return result;
@@ -197,11 +203,14 @@ export function useUpdateZKPassportMetadata() {
       args: [description],
     });
 
-    const result = await sendTransaction({
-      to: zkpassport as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: zkpassport as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['zkpassport-metadata'] });
     return result;
@@ -218,11 +227,14 @@ export function useUpdateZKPassportMetadata() {
       args: [externalURL],
     });
 
-    const result = await sendTransaction({
-      to: zkpassport as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: zkpassport as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['zkpassport-metadata'] });
     return result;

@@ -35,11 +35,14 @@ export function useENSMint() {
 
       logger.info('[useENSMint] Minting subdomain', { label, owner });
 
-      const result = await sendTransaction({
-        to: registrarAddress as `0x${string}`,
-        data,
-        chainId: CHAIN_IDS.BASE,
-      });
+      const result = await sendTransaction(
+        {
+          to: registrarAddress as `0x${string}`,
+          data,
+          chainId: CHAIN_IDS.BASE,
+        },
+        { sponsor: true }
+      );
 
       setHash(result.hash);
       setIsSuccess(true);

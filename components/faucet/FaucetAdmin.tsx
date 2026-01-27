@@ -87,14 +87,17 @@ const FaucetAdmin: React.FC<FaucetAdminProps> = ({ chainId }) => {
 
     try {
       // Use Privy's sendTransaction for gas sponsorship support
-      const result = await sendTransaction({
-        to: txData.to,
-        data: txData.data,
-        value: txData.value,
-        chainId, // Required for gas sponsorship
-      });
+      const result = await sendTransaction(
+        {
+          to: txData.to,
+          data: txData.data,
+          value: txData.value,
+          chainId,
+        },
+        { sponsor: true }
+      );
 
-      setTxHash(result.transactionHash);
+      setTxHash(result.hash);
 
       // Refresh data after delay
       setTimeout(loadAdminData, 3000);

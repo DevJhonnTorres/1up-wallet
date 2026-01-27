@@ -35,11 +35,14 @@ export function AdminManagement() {
         args: [newAdmin as `0x${string}`],
       });
 
-      await sendTransaction({
-        to: swag1155 as `0x${string}`,
-        data,
-        chainId,
-      });
+      await sendTransaction(
+        {
+          to: swag1155 as `0x${string}`,
+          data,
+          chainId,
+        },
+        { sponsor: true }
+      );
 
       setMessage({ type: 'success', text: `Admin added: ${newAdmin.slice(0, 8)}...` });
       setNewAdmin('');
@@ -68,11 +71,14 @@ export function AdminManagement() {
         args: [removeAdminAddr as `0x${string}`],
       });
 
-      await sendTransaction({
-        to: swag1155 as `0x${string}`,
-        data,
-        chainId,
-      });
+      await sendTransaction(
+        {
+          to: swag1155 as `0x${string}`,
+          data,
+          chainId,
+        },
+        { sponsor: true }
+      );
 
       setMessage({ type: 'success', text: `Admin removed: ${removeAdminAddr.slice(0, 8)}...` });
       setRemoveAdminAddr('');

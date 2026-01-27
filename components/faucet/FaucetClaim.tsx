@@ -152,11 +152,14 @@ const FaucetClaim: React.FC<FaucetClaimProps> = ({ chainId, onClaimSuccess }) =>
 
       const txData = getClaimTxData(chainId, vaultId);
 
-      const result = await sendTransaction({
-        to: txData.to as `0x${string}`,
-        data: txData.data,
-        chainId,
-      });
+      const result = await sendTransaction(
+        {
+          to: txData.to as `0x${string}`,
+          data: txData.data,
+          chainId,
+        },
+        { sponsor: true }
+      );
 
       setTxHash(result.hash);
 

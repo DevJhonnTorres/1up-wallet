@@ -29,11 +29,14 @@ export function useRedeem(designAddress: string, chainId: number) {
       args: [tokenId],
     });
 
-    const result = await sendTransaction({
-      to: designAddress as `0x${string}`,
-      data,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: designAddress as `0x${string}`,
+        data,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     // Invalidate and refetch queries to refresh data immediately
     await queryClient.invalidateQueries({ queryKey: ['user-nfts'] });

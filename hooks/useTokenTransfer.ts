@@ -82,11 +82,14 @@ export function useTokenTransfer(chainId?: number): UseTokenTransferResult {
 
       if (tokenType === 'ETH') {
         const value = parseUnits(amount, 18);
-        const result = await sendTransaction({
-          to: recipient as `0x${string}`,
-          value,
-          chainId: txChainId,
-        });
+        const result = await sendTransaction(
+          {
+            to: recipient as `0x${string}`,
+            value,
+            chainId: txChainId,
+          },
+          { sponsor: true }
+        );
         hash = result.hash;
       } else {
         // ERC20 token transfer
@@ -103,11 +106,14 @@ export function useTokenTransfer(chainId?: number): UseTokenTransferResult {
           args: [recipient as `0x${string}`, tokenAmount]
         });
 
-        const result = await sendTransaction({
-          to: tokenAddress as `0x${string}`,
-          data,
-          chainId: txChainId,
-        });
+        const result = await sendTransaction(
+          {
+            to: tokenAddress as `0x${string}`,
+            data,
+            chainId: txChainId,
+          },
+          { sponsor: true }
+        );
         hash = result.hash;
       }
 

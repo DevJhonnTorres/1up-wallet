@@ -33,11 +33,14 @@ export function useUpdateDesignInfo(designAddress: string, chainId: number) {
       args: [designInfo],
     });
 
-    const result = await sendTransaction({
-      to: designAddress as `0x${string}`,
-      data,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: designAddress as `0x${string}`,
+        data,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['design-info', designAddress] });
 
@@ -75,11 +78,14 @@ export function useUpdateDesignDiscountConfig(designAddress: string, chainId: nu
       args: [discountConfig],
     });
 
-    const result = await sendTransaction({
-      to: designAddress as `0x${string}`,
-      data,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: designAddress as `0x${string}`,
+        data,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['design-discount-config', designAddress] });
 
@@ -117,11 +123,14 @@ export function useSetDesignActive(designAddress: string, chainId: number) {
       args: [active],
     });
 
-    const result = await sendTransaction({
-      to: designAddress as `0x${string}`,
-      data,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: designAddress as `0x${string}`,
+        data,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['design-info', designAddress] });
 
@@ -159,11 +168,14 @@ export function useSetDesignPaymentToken(designAddress: string, chainId: number)
       args: [paymentTokenAddress as `0x${string}`],
     });
 
-    const result = await sendTransaction({
-      to: designAddress as `0x${string}`,
-      data,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: designAddress as `0x${string}`,
+        data,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['design-info', designAddress] });
 
@@ -203,11 +215,14 @@ export function useSetDesignPrice(designAddress: string, chainId: number) {
       args: [priceInUnits],
     });
 
-    const result = await sendTransaction({
-      to: designAddress as `0x${string}`,
-      data,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: designAddress as `0x${string}`,
+        data,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['design-info', designAddress] });
 
@@ -245,11 +260,14 @@ export function useSetDesignTotalSupply(designAddress: string, chainId: number) 
       args: [BigInt(totalSupply)],
     });
 
-    const result = await sendTransaction({
-      to: designAddress as `0x${string}`,
-      data,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: designAddress as `0x${string}`,
+        data,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['design-info', designAddress] });
 

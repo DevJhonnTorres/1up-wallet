@@ -36,11 +36,14 @@ export function useCreateVault() {
       args: [data.name, data.description, claimAmountWei, data.vaultType, data.whitelistEnabled],
     });
 
-    const result = await sendTransaction({
-      to: faucetManager as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: faucetManager as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
 
@@ -81,11 +84,14 @@ export function useUpdateVault() {
       args: [data.vaultId, data.name, data.description, claimAmountWei, data.active],
     });
 
-    const result = await sendTransaction({
-      to: faucetManager as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: faucetManager as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
 
@@ -126,12 +132,15 @@ export function useVaultDeposit() {
       args: [vaultId],
     });
 
-    const result = await sendTransaction({
-      to: faucetManager as `0x${string}`,
-      data: txData,
-      value: amountWei,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: faucetManager as `0x${string}`,
+        data: txData,
+        value: amountWei,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
 
@@ -172,11 +181,14 @@ export function useVaultWithdraw() {
       args: [vaultId, amountWei],
     });
 
-    const result = await sendTransaction({
-      to: faucetManager as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: faucetManager as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['faucet-all-vaults'] });
 
@@ -215,11 +227,14 @@ export function useFaucetPause() {
       args: [],
     });
 
-    const result = await sendTransaction({
-      to: faucetManager as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: faucetManager as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['faucet-paused'] });
 
@@ -241,11 +256,14 @@ export function useFaucetPause() {
       args: [],
     });
 
-    const result = await sendTransaction({
-      to: faucetManager as `0x${string}`,
-      data: txData,
-      chainId,
-    });
+    const result = await sendTransaction(
+      {
+        to: faucetManager as `0x${string}`,
+        data: txData,
+        chainId,
+      },
+      { sponsor: true }
+    );
 
     queryClient.invalidateQueries({ queryKey: ['faucet-paused'] });
 
