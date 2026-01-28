@@ -1,9 +1,14 @@
 /**
- * useUserENS - Hook for querying user's ENS subdomain from on-chain events
+ * useUserENS - Hook for querying user's ENS subdomain
+ *
+ * Resolution Strategy (Layered Approach per ENSv2 best practices):
+ * 1. Layer 1: Check localStorage cache (instant)
+ * 2. Layer 2: Try mainnet ENS reverse resolution (ENSv2 standard)
+ * 3. Layer 3: Query Base L2 events (fallback for recent mints)
  */
 import { useState, useEffect } from 'react';
 import { createPublicClient, http, parseAbiItem } from 'viem';
-import { base } from 'viem/chains';
+import { base, mainnet } from 'viem/chains';
 import { ENS_REGISTRAR_ADDRESSES, ENS_CONFIG, CHAIN_IDS, getRpcUrl } from '../../config/constants';
 import { logger } from '../../utils/logger';
 
@@ -27,18 +32,62 @@ export function useUserENS(address: string | undefined): UserENSResult {
 
     const fetchUserENS = async () => {
       setIsLoading(true);
+      const cacheKey = `ens-subdomain-${address.toLowerCase()}`;
+
       try {
-        // Check localStorage first for cached subdomain
-        const cacheKey = `ens-subdomain-${address.toLowerCase()}`;
+        // ============================================
+        // Layer 1: Check localStorage cache (instant)
+        // ============================================
         const cachedSubdomain = localStorage.getItem(cacheKey);
         if (cachedSubdomain) {
-          logger.info('[useUserENS] Found cached subdomain', { subdomain: cachedSubdomain, address });
+          logger.info('[useUserENS] Layer 1: Found cached subdomain', { subdomain: cachedSubdomain });
           setSubdomain(cachedSubdomain);
           setIsLoading(false);
           return;
         }
 
-        const client = createPublicClient({
+        // ============================================
+        // Layer 2: Try mainnet ENS reverse resolution
+        // Per ENSv2: "Resolution always starts on Ethereum Mainnet"
+        // ============================================
+        try {
+          const mainnetClient = createPublicClient({
+            chain: mainnet,
+            transport: http(getRpcUrl(CHAIN_IDS.ETHEREUM)),
+          });
+
+          // Reverse lookup: address -> name
+          const ensName = await mainnetClient.getEnsName({
+            address: address as `0x${string}`,
+          });
+
+          // Check if it's an ethcali.eth subdomain
+          if (ensName && ensName.endsWith(`.${ENS_CONFIG.parentName}`)) {
+            const label = ensName.replace(`.${ENS_CONFIG.parentName}`, '');
+
+            // Cache for future lookups
+            try {
+              localStorage.setItem(cacheKey, label);
+            } catch {
+              // Ignore storage errors
+            }
+
+            logger.info('[useUserENS] Layer 2: Found subdomain via mainnet ENS', { label });
+            setSubdomain(label);
+            setIsLoading(false);
+            return;
+          }
+        } catch (mainnetError) {
+          // Mainnet resolution failed (resolver not configured or network error)
+          // This is expected if ethcali.eth doesn't have CCIP-Read resolver set up
+          logger.debug('[useUserENS] Layer 2: Mainnet resolution failed, trying Layer 3', mainnetError);
+        }
+
+        // ============================================
+        // Layer 3: Query Base L2 events (fallback)
+        // Limited to recent ~45k blocks due to RPC limits
+        // ============================================
+        const baseClient = createPublicClient({
           chain: base,
           transport: http(getRpcUrl(CHAIN_IDS.BASE)),
         });
@@ -50,12 +99,11 @@ export function useUserENS(address: string | undefined): UserENSResult {
           return;
         }
 
-        // Query NameRegistered events for this owner (only recent blocks due to RPC limits)
-        // Use a recent block range to avoid RPC limits (most RPCs limit to ~50k blocks)
-        const currentBlock = await client.getBlockNumber();
+        // Query recent blocks only (RPC limit ~50k blocks)
+        const currentBlock = await baseClient.getBlockNumber();
         const fromBlock = currentBlock > 45000n ? currentBlock - 45000n : 0n;
 
-        const logs = await client.getLogs({
+        const logs = await baseClient.getLogs({
           address: registrarAddress as `0x${string}`,
           event: parseAbiItem('event NameRegistered(string indexed label, address indexed owner)'),
           args: {
@@ -66,51 +114,40 @@ export function useUserENS(address: string | undefined): UserENSResult {
         });
 
         if (logs.length > 0) {
-          // Get the most recent registration (last event)
+          // Get the most recent registration
           const latestLog = logs[logs.length - 1];
-          // The label is indexed so we get the hash, but we stored the actual label in the event
-          // For indexed string, we get the keccak256 hash. We need to decode from the raw data.
-          // Actually, looking at the ABI again - indexed strings give us the hash.
-          // We need a different approach - either use a subgraph or store locally after mint.
-
-          // Alternative: Check if there's non-indexed data we can use
-          // For now, let's try to get the label from the transaction input data
           const txHash = latestLog.transactionHash;
+
           if (txHash) {
-            const tx = await client.getTransaction({ hash: txHash });
+            const tx = await baseClient.getTransaction({ hash: txHash });
             if (tx && tx.input) {
-              // Decode the register function call to get the label
-              // register(string label, address owner)
-              // Function selector is first 4 bytes, then we have the encoded params
               try {
-                // Skip function selector (4 bytes = 8 hex chars + '0x')
+                // Decode register(string label, address owner) call
                 const inputData = tx.input.slice(10);
-                // First param is offset to string (32 bytes)
-                // Second param is address (32 bytes)
-                // Then string length (32 bytes) followed by string data
                 const stringOffset = parseInt(inputData.slice(0, 64), 16);
                 const stringLengthHex = inputData.slice(stringOffset * 2, stringOffset * 2 + 64);
                 const stringLength = parseInt(stringLengthHex, 16);
                 const stringDataHex = inputData.slice(stringOffset * 2 + 64, stringOffset * 2 + 64 + stringLength * 2);
                 const label = Buffer.from(stringDataHex, 'hex').toString('utf8');
 
-                // Cache in localStorage for future lookups
+                // Cache for future lookups
                 try {
                   localStorage.setItem(cacheKey, label);
                 } catch {
                   // Ignore storage errors
                 }
 
+                logger.info('[useUserENS] Layer 3: Found subdomain from Base events', { label });
                 setSubdomain(label);
-                logger.info('[useUserENS] Found subdomain from events', { label, address });
                 return;
               } catch (decodeError) {
-                logger.error('[useUserENS] Failed to decode label from tx', decodeError);
+                logger.error('[useUserENS] Layer 3: Failed to decode label from tx', decodeError);
               }
             }
           }
         }
 
+        // No subdomain found in any layer
         setSubdomain(null);
       } catch (error) {
         logger.error('[useUserENS] Query failed', error);
