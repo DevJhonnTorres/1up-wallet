@@ -23,7 +23,7 @@ import {
   USDCUpdated as USDCUpdatedEvent,
   VariantURISet as VariantURISetEvent,
   VariantUpdated as VariantUpdatedEvent
-} from "../generated/swag/swag"
+} from "../generated/Swag1155/Swag1155"
 import {
   AdminAdded,
   AdminRemoved,

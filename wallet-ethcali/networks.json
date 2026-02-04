@@ -1,8 +1,8 @@
 {
-  "optimism": {
-    "swag": {
+  "base": {
+    "Swag1155": {
       "address": "0xd4218995da2e92323d33a6e38adc8ef3a671b456",
-      "startBlock": 0
+      "startBlock": 41608794
     }
   }
 }

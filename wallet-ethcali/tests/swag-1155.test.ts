@@ -8,9 +8,9 @@ import {
 } from "matchstick-as/assembly/index"
 import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts"
 import { AdminAdded } from "../generated/schema"
-import { AdminAdded as AdminAddedEvent } from "../generated/swag/swag"
-import { handleAdminAdded } from "../src/swag"
-import { createAdminAddedEvent } from "./swag-utils"
+import { AdminAdded as AdminAddedEvent } from "../generated/Swag1155/Swag1155"
+import { handleAdminAdded } from "../src/swag-1155"
+import { createAdminAddedEvent } from "./swag-1155-utils"
 
 // Tests structure (matchstick-as >=0.5.0)
 // https://thegraph.com/docs/en/subgraphs/developing/creating/unit-testing-framework/#tests-structure

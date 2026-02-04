@@ -5,12 +5,12 @@ schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum
-    name: swag
-    network: optimism
+    name: Swag1155
+    network: base
     source:
       address: "0xd4218995da2e92323d33a6e38adc8ef3a671b456"
-      abi: swag
-      startBlock: 0
+      abi: Swag1155
+      startBlock: 41608794
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -41,8 +41,8 @@ dataSources:
         - VariantURISet
         - VariantUpdated
       abis:
-        - name: swag
-          file: ./abis/swag.json
+        - name: Swag1155
+          file: ./abis/Swag1155.json
       eventHandlers:
         - event: AdminAdded(indexed address)
           handler: handleAdminAdded
@@ -92,4 +92,4 @@ dataSources:
           handler: handleVariantURISet
         - event: VariantUpdated(indexed uint256,uint256,uint256,bool)
           handler: handleVariantUpdated
-      file: ./src/swag.ts
+      file: ./src/swag-1155.ts
