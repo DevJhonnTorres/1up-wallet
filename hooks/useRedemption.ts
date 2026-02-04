@@ -25,7 +25,7 @@ export function useRedeem(designAddress: string, chainId: number) {
 
     const data = encodeFunctionData({
       abi: Swag1155ABI as any,
-      functionName: 'requestPhysicalRedemption',
+      functionName: 'redeem',
       args: [tokenId],
     });
 

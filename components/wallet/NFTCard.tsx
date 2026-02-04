@@ -72,6 +72,7 @@ export function NFTCard({ nft, onRedeemSuccess }: NFTCardProps) {
       // Wait a moment for blockchain state to update, then refetch
       setTimeout(() => {
         onRedeemSuccess?.();
+        setIsRedeeming(false);
       }, 2000);
     } catch (error) {
       logger.error('Error redeeming NFT:', error);
