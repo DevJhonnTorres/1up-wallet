@@ -92,6 +92,58 @@ export default function Home() {
               </button>
             </div>
             
+            {/* Infrastructure Section */}
+            <div className="mb-12 sm:mb-20">
+              <div className="text-center mb-8 sm:mb-12">
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4">Infrastructure</h2>
+                <p className="text-gray-400 max-w-2xl mx-auto text-sm sm:text-base px-4">
+                  Built on reliable and secure infrastructure partners
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-8">
+                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                    <Image src="/infraused/privy.png" alt="Privy" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
+                  </div>
+                  <h3 className="text-base sm:text-xl font-bold text-blue-400 mb-2 sm:mb-3">Privy</h3>
+                  <p className="text-gray-500 text-xs sm:text-sm">
+                    Secure authentication with email and passkeys.
+                  </p>
+                </div>
+
+                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                    <Image src="/infraused/zkpassportid.png" alt="ZK Passport" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
+                  </div>
+                  <h3 className="text-base sm:text-xl font-bold text-purple-400 mb-2 sm:mb-3">ZK Passport</h3>
+                  <p className="text-gray-500 text-xs sm:text-sm">
+                    Sybil-resistant identity with zero-knowledge proofs.
+                  </p>
+                </div>
+
+                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                    <Image src="/infraused/ens.png" alt="Ethereum Name Service" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
+                  </div>
+                  <h3 className="text-base sm:text-xl font-bold text-purple-400 mb-2 sm:mb-3">ENS</h3>
+                  <p className="text-gray-500 text-xs sm:text-sm">
+                    Decentralized naming on Ethereum and Internet.
+                  </p>
+                </div>
+
+                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                    <Image src="/infraused/poaplogo.png" alt="POAP" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
+                  </div>
+                  <h3 className="text-base sm:text-xl font-bold text-purple-400 mb-2 sm:mb-3">POAP</h3>
+                  <p className="text-gray-500 text-xs sm:text-sm">
+                    Proof of Attendance Protocol for event verification and discounts.
+                  </p>
+                </div>
+
+              </div>
+            </div>
 
             {/* Features Section */}
             <div className="mb-12 sm:mb-20">
@@ -143,59 +195,6 @@ export default function Home() {
                     Builders need gas for deployments. We gotchu.
                   </p>
                 </div>
-              </div>
-            </div>
-
-            {/* Infrastructure Section */}
-            <div className="mb-12 sm:mb-20">
-              <div className="text-center mb-8 sm:mb-12">
-                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4">Infrastructure</h2>
-                <p className="text-gray-400 max-w-2xl mx-auto text-sm sm:text-base px-4">
-                  Built on reliable and secure infrastructure partners
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-8">
-                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                    <Image src="/infraused/privy.png" alt="Privy" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
-                  </div>
-                  <h3 className="text-base sm:text-xl font-bold text-blue-400 mb-2 sm:mb-3">Privy</h3>
-                  <p className="text-gray-500 text-xs sm:text-sm">
-                    Secure authentication with email and passkeys.
-                  </p>
-                </div>
-
-                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                    <Image src="/infraused/zkpassportid.png" alt="ZK Passport" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
-                  </div>
-                  <h3 className="text-base sm:text-xl font-bold text-purple-400 mb-2 sm:mb-3">ZK Passport</h3>
-                  <p className="text-gray-500 text-xs sm:text-sm">
-                    Sybil-resistant identity with zero-knowledge proofs.
-                  </p>
-                </div>
-
-                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                    <Image src="/infraused/ens.png" alt="Ethereum Name Service" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
-                  </div>
-                  <h3 className="text-base sm:text-xl font-bold text-purple-400 mb-2 sm:mb-3">ENS</h3>
-                  <p className="text-gray-500 text-xs sm:text-sm">
-                    Decentralized naming on Ethereum and Internet.
-                  </p>
-                </div>
-
-                <div className="bg-gray-900/50 border border-gray-700 rounded-xl p-4 sm:p-8 text-center">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                    <Image src="/infraused/poaplogo.png" alt="POAP" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" unoptimized />
-                  </div>
-                  <h3 className="text-base sm:text-xl font-bold text-purple-400 mb-2 sm:mb-3">POAP</h3>
-                  <p className="text-gray-500 text-xs sm:text-sm">
-                    Proof of Attendance Protocol for event verification and discounts.
-                  </p>
-                </div>
-
               </div>
             </div>
 

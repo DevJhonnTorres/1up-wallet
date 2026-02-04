@@ -1,13 +1,44 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { getChainRpc } from '../config/networks';
-import { useContractAdmin } from '../hooks/useContractAdmin';
-import { useFaucetManagerAdmin } from '../hooks/faucet';
-import { useZKPassportAdmin } from '../hooks/useZKPassportAdmin';
+import { useAdminStatus } from '../hooks/useAdminStatus';
 import { logger } from '../utils/logger';
+
+// Icons as simple SVG components for cleaner mobile menu
+const WalletIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
+  </svg>
+);
+const FaucetIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9zm3.75 11.625a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+  </svg>
+);
+const IdentityIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+  </svg>
+);
+const SwagIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+  </svg>
+);
+const AdminIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+const LogoutIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+  </svg>
+);
 
 const SUPPORTED_CHAINS = [
   { id: 8453, name: 'Base', logo: '/chains/base.jpeg' },
@@ -42,14 +73,11 @@ const Navigation: React.FC<NavigationProps> = ({
     setDisplayChainId(currentChainId);
   }, [currentChainId]);
 
-  // Close dropdown and mobile menu when clicking outside
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
-      }
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
-        setIsMobileMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -63,35 +91,47 @@ const Navigation: React.FC<NavigationProps> = ({
 
   const userWallet = wallets?.[0];
 
-  // Check if user is admin/owner on the current chain's contracts
-  // Pass displayChainId to ensure hooks check the currently selected chain
-  const { isAdmin: isSwagAdmin } = useContractAdmin(displayChainId);
-  const { isAdmin: isFaucetAdmin, isSuperAdmin: isFaucetSuperAdmin } = useFaucetManagerAdmin(displayChainId);
-  const { isOwner: isZKPassportOwner } = useZKPassportAdmin(displayChainId);
+  // Check if user is admin/owner on the current chain's contracts (single combined query)
+  const {
+    isSwagAdmin,
+    isFaucetAdmin,
+    isFaucetSuperAdmin,
+    isZKPassportOwner,
+  } = useAdminStatus(displayChainId);
 
-  // Debug logging for admin status
-  useEffect(() => {
-    if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
-      logger.info('[Navigation] Admin status check', {
-        displayChainId,
-        walletAddress: userWallet?.address?.slice(0, 10),
-        swagAdmin: isSwagAdmin,
-        faucetAdmin: isFaucetAdmin,
-        faucetSuperAdmin: isFaucetSuperAdmin,
-        zkOwner: isZKPassportOwner,
-      });
-    }
-  }, [displayChainId, userWallet?.address, isSwagAdmin, isFaucetAdmin, isFaucetSuperAdmin, isZKPassportOwner]);
-
-  const navItems = [
-    { href: '/wallet', label: 'WALLET' },
-    { href: '/faucet', label: 'FAUCET' },
-    { href: '/sybil', label: 'IDENTITY' },
-    { href: '/swag', label: 'SWAG' },
-    ...(isSwagAdmin ? [{ href: '/swag/admin', label: 'SWAG ADMIN' }] : []),
-    ...(isFaucetAdmin || isFaucetSuperAdmin ? [{ href: '/faucet/admin', label: 'FAUCET ADMIN' }] : []),
-    ...(isZKPassportOwner ? [{ href: '/sybil/admin', label: 'IDENTITY ADMIN' }] : []),
+  const mainNavItems = [
+    { href: '/wallet', label: 'Wallet', icon: WalletIcon },
+    { href: '/faucet', label: 'Faucet', icon: FaucetIcon },
+    { href: '/sybil', label: 'Identity', icon: IdentityIcon },
+    { href: '/swag', label: 'Swag', icon: SwagIcon },
   ];
+
+  const adminNavItems = [
+    ...(isSwagAdmin ? [{ href: '/swag/admin', label: 'Swag Admin', icon: AdminIcon }] : []),
+    ...(isFaucetAdmin || isFaucetSuperAdmin ? [{ href: '/faucet/admin', label: 'Faucet Admin', icon: AdminIcon }] : []),
+    ...(isZKPassportOwner ? [{ href: '/sybil/admin', label: 'Identity Admin', icon: AdminIcon }] : []),
+  ];
+
+  const navItems = [...mainNavItems, ...adminNavItems];
+
+  // Lock body scroll and signal mobile menu state when open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.setAttribute('data-mobile-menu-open', 'true');
+    } else {
+      document.body.style.overflow = '';
+      document.body.removeAttribute('data-mobile-menu-open');
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.removeAttribute('data-mobile-menu-open');
+    };
+  }, [isMobileMenuOpen]);
+
+  const closeMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(false);
+  }, []);
 
   const isActive = (href: string) => router.pathname === href || router.pathname.startsWith(href + '/');
   const currentChain = SUPPORTED_CHAINS.find(c => c.id === displayChainId) || SUPPORTED_CHAINS[0];
@@ -253,7 +293,7 @@ const Navigation: React.FC<NavigationProps> = ({
                 key={item.href}
                 href={item.href}
                 className={`
-                  px-3 py-1.5 rounded-lg font-mono text-xs transition-all
+                  px-3 py-1.5 rounded-lg font-mono text-xs transition-all uppercase
                   ${isActive(item.href)
                     ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
                     : 'text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10'
@@ -350,44 +390,139 @@ const Navigation: React.FC<NavigationProps> = ({
           </div>
         </div>
 
-        {/* Mobile Menu */}
+      </div>
+
+      {/* Mobile Menu - Full screen slide-in drawer */}
+      <div
+        className={`md:hidden fixed inset-0 z-[60] transition-opacity duration-300 ${
+          isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+          onClick={closeMobileMenu}
+        />
+
+        {/* Drawer Panel */}
         <div
           ref={mobileMenuRef}
-          className={`md:hidden overflow-hidden transition-all duration-300 ${
-            isMobileMenuOpen ? 'max-h-80 opacity-100 pb-4' : 'max-h-0 opacity-0'
+          className={`absolute right-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-slate-950 flex flex-col shadow-2xl transform transition-transform duration-300 ease-out ${
+            isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
-          <div className="flex flex-col gap-1 pt-2 border-t border-gray-800">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`
-                  px-4 py-3 rounded-lg font-mono text-sm transition-all
-                  ${isActive(item.href)
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
-                    : 'text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10'
-                  }
-                `}
-              >
-                {item.label}
-              </Link>
-            ))}
+          {/* Header with close button */}
+          <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-slate-800/80 bg-slate-900/50">
+            <div className="flex items-center gap-3">
+              <Image
+                src={currentChain.logo}
+                alt={currentChain.name}
+                width={28}
+                height={28}
+                className="w-7 h-7 rounded-full ring-2 ring-slate-700"
+                unoptimized
+              />
+              <div className="min-w-0">
+                <p className="text-xs text-white font-medium">{currentChain.name}</p>
+                {userWallet && (
+                  <p className="text-[10px] text-slate-500 font-mono truncate">
+                    {userWallet.address.slice(0, 6)}...{userWallet.address.slice(-4)}
+                  </p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={closeMobileMenu}
+              className="p-2 -mr-1 text-slate-400 hover:text-white rounded-full hover:bg-slate-800/50 transition-colors"
+              aria-label="Close menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
-            {/* Address in mobile menu */}
-            {userWallet && (
-              <div className="px-4 py-2 text-xs text-gray-500 font-mono border-t border-gray-800 mt-2 pt-3">
-                {userWallet.address.slice(0, 8)}...{userWallet.address.slice(-6)}
+          {/* Navigation Links - Scrollable area */}
+          <div className="flex-1 overflow-y-auto overscroll-contain py-2">
+            {/* Main Navigation */}
+            <div className="px-3 space-y-1">
+              {mainNavItems.map((item) => {
+                const IconComponent = item.icon;
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={closeMobileMenu}
+                    className={`
+                      flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
+                      ${active
+                        ? 'bg-cyan-500/15 text-cyan-400'
+                        : 'text-slate-300 active:bg-slate-800'
+                      }
+                    `}
+                  >
+                    <span className={active ? 'text-cyan-400' : 'text-slate-500'}>
+                      <IconComponent />
+                    </span>
+                    {item.label}
+                    {active && (
+                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Admin Section */}
+            {adminNavItems.length > 0 && (
+              <div className="px-3 mt-4">
+                <div className="px-4 pb-2 mb-1 border-b border-slate-800/50">
+                  <span className="text-[10px] text-orange-500/70 uppercase tracking-widest font-medium">Admin</span>
+                </div>
+                <div className="space-y-1">
+                  {adminNavItems.map((item) => {
+                    const IconComponent = item.icon;
+                    const active = isActive(item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={closeMobileMenu}
+                        className={`
+                          flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
+                          ${active
+                            ? 'bg-orange-500/15 text-orange-400'
+                            : 'text-orange-400/70 active:bg-slate-800'
+                          }
+                        `}
+                      >
+                        <span className={active ? 'text-orange-400' : 'text-orange-500/50'}>
+                          <IconComponent />
+                        </span>
+                        {item.label}
+                        {active && (
+                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-400" />
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             )}
+          </div>
 
-            {/* Logout in mobile menu */}
+          {/* Footer - Always visible logout */}
+          <div className="flex-shrink-0 border-t border-slate-800/80 p-3 bg-slate-950/95 backdrop-blur-sm">
             <button
-              onClick={logout}
-              className="mx-4 mt-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm font-mono transition-all text-center"
+              onClick={() => {
+                closeMobileMenu();
+                logout();
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 border border-red-500/30 rounded-xl text-red-400 font-medium transition-all"
             >
-              LOGOUT
+              <LogoutIcon />
+              Logout
             </button>
           </div>
         </div>

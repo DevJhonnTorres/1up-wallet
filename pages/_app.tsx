@@ -5,6 +5,7 @@ import Head from 'next/head';
 import type { AppProps } from 'next/app';
 import { useState } from 'react';
 import '../styles/globals.css';
+import { AdminDrawer } from '../components/shared/AdminDrawer';
 
 function MyApp({ Component, pageProps }: AppProps) {
   const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
@@ -73,6 +74,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       >
         <QueryClientProvider client={queryClient}>
           <Component {...pageProps} />
+          <AdminDrawer />
           {process.env.NODE_ENV === 'development' && (
             <ReactQueryDevtools initialIsOpen={false} />
           )}

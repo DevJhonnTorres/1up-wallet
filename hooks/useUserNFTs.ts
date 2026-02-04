@@ -20,48 +20,21 @@ export interface UserNFT {
   chainId?: number; // Chain ID where the NFT exists
 }
 
-// Fetch all token IDs from DesignMinted events (listTokenIds no longer exists)
+// Fetch all token IDs using listTokenIds() contract function
 async function fetchTokenIds(swag1155: string, chainId: number): Promise<bigint[]> {
   const rpcUrl = getChainRpc(chainId);
   const client = createPublicClient({ transport: http(rpcUrl) });
 
   try {
-    // Query DesignMinted events to get all minted token IDs
-    const designMintedEvent = {
-      anonymous: false,
-      inputs: [
-        { indexed: true, name: 'buyer', type: 'address' },
-        { indexed: true, name: 'tokenId', type: 'uint256' },
-        { indexed: false, name: 'size', type: 'string' },
-        { indexed: false, name: 'price', type: 'uint256' },
-        { indexed: false, name: 'hadDiscount', type: 'bool' },
-      ],
-      name: 'DesignMinted',
-      type: 'event',
-    } as const;
-
-    // Use a recent block range to avoid RPC limits (most RPCs limit to ~50k blocks)
-    const currentBlock = await client.getBlockNumber();
-    const fromBlock = currentBlock > 45000n ? currentBlock - 45000n : 0n;
-
-    const logs = await client.getLogs({
+    const result = await client.readContract({
       address: swag1155 as `0x${string}`,
-      event: designMintedEvent,
-      fromBlock,
-      toBlock: 'latest' as const,
+      abi: Swag1155ABI as any,
+      functionName: 'listTokenIds',
+      args: [],
     });
-
-    // Extract unique token IDs from events
-    const tokenIds = new Set<bigint>();
-    for (const log of logs) {
-      if (log.args.tokenId) {
-        tokenIds.add(log.args.tokenId as bigint);
-      }
-    }
-
-    return Array.from(tokenIds).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    return result as bigint[];
   } catch (error) {
-    logger.error('Error fetching token IDs from events', error);
+    logger.error('Error fetching token IDs from contract', error);
     return [];
   }
 }

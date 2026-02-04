@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { createPublicClient, http, formatUnits } from 'viem';
 import { base, mainnet, optimism } from 'viem/chains';
 import { TokenBalance } from '../types/index';
@@ -41,10 +41,10 @@ const TOKEN_ADDRESSES: Record<number, { USDC: string; EURC?: string; USDT?: stri
 // ERC20 ABI for balanceOf
 const ERC20_ABI = [
   {
-    constant: true,
     inputs: [{ name: 'owner', type: 'address' }],
     name: 'balanceOf',
     outputs: [{ name: 'balance', type: 'uint256' }],
+    stateMutability: 'view',
     type: 'function',
   },
 ] as const;
@@ -69,31 +69,26 @@ const getChainForId = (id: number) => {
   }
 };
 
+const DEFAULT_BALANCES: TokenBalance = {
+  ethBalance: '0',
+  uscBalance: '0',
+  eurcBalance: '0',
+  usdtBalance: '0',
+};
+
 /**
- * Custom hook to fetch token balances
+ * Custom hook to fetch token balances using multicall for efficiency
  * @param address The wallet address
  * @param chainId The chain ID
  */
 export function useTokenBalances(address: string | undefined, chainId: number = CHAIN_IDS.BASE) {
-  const [balances, setBalances] = useState<TokenBalance>({
-    ethBalance: '0',
-    uscBalance: '0',
-    eurcBalance: '0',
-    usdtBalance: '0'
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ['token-balances', address, chainId],
+    queryFn: async (): Promise<TokenBalance> => {
+      if (!address) return DEFAULT_BALANCES;
 
-  const fetchBalances = useCallback(async () => {
-    if (!address) return;
+      logger.debug(`Fetching balances for ${getChainName(chainId)}`);
 
-    logger.debug(`Fetching balances for ${getChainName(chainId)}`);
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Get RPC URL from centralized config (uses env vars)
       const rpcUrl = getChainRpc(chainId);
       const chain = getChainForId(chainId);
 
@@ -102,96 +97,92 @@ export function useTokenBalances(address: string | undefined, chainId: number = 
         transport: http(rpcUrl),
       });
 
-      // Fetch ETH balance
-      const ethBalance = await client.getBalance({ address: address as `0x${string}` });
-
       // Get token addresses for this network (fallback to Base if not found)
       const tokens = TOKEN_ADDRESSES[chainId] || TOKEN_ADDRESSES[CHAIN_IDS.BASE];
 
-      // Fetch USDC balance
-      let usdcBalance = BigInt(0);
+      // Build multicall contracts array for token balances
+      const calls: {
+        address: `0x${string}`;
+        abi: typeof ERC20_ABI;
+        functionName: 'balanceOf';
+        args: [`0x${string}`];
+      }[] = [];
+      const tokenOrder: ('USDC' | 'EURC' | 'USDT')[] = [];
+
       if (tokens.USDC) {
-        try {
-          const result = await client.readContract({
-            address: tokens.USDC as `0x${string}`,
-            abi: ERC20_ABI,
-            functionName: 'balanceOf',
-            args: [address as `0x${string}`],
-          });
-          usdcBalance = result as bigint;
-        } catch (err) {
-          logger.error('Error fetching USDC balance', err);
-        }
+        calls.push({
+          address: tokens.USDC as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [address as `0x${string}`],
+        });
+        tokenOrder.push('USDC');
       }
-
-      // Fetch EURC balance (if available on this chain)
-      let eurcBalance = BigInt(0);
       if (tokens.EURC) {
-        try {
-          const result = await client.readContract({
-            address: tokens.EURC as `0x${string}`,
-            abi: ERC20_ABI,
-            functionName: 'balanceOf',
-            args: [address as `0x${string}`],
-          });
-          eurcBalance = result as bigint;
-        } catch (err) {
-          logger.error('Error fetching EURC balance', err);
-        }
+        calls.push({
+          address: tokens.EURC as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [address as `0x${string}`],
+        });
+        tokenOrder.push('EURC');
+      }
+      if (tokens.USDT) {
+        calls.push({
+          address: tokens.USDT as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [address as `0x${string}`],
+        });
+        tokenOrder.push('USDT');
       }
 
-      // Fetch USDT balance (if available on this chain)
-      let usdtBalance = BigInt(0);
-      if (tokens.USDT) {
-        try {
-          const result = await client.readContract({
-            address: tokens.USDT as `0x${string}`,
-            abi: ERC20_ABI,
-            functionName: 'balanceOf',
-            args: [address as `0x${string}`],
-          });
-          usdtBalance = result as bigint;
-        } catch (err) {
-          logger.error('Error fetching USDT balance', err);
+      // Fetch ETH balance and token balances in parallel (2 RPC calls instead of 4)
+      const [ethBalance, tokenResults] = await Promise.all([
+        client.getBalance({ address: address as `0x${string}` }),
+        calls.length > 0
+          ? client.multicall({ contracts: calls, allowFailure: true })
+          : Promise.resolve([]),
+      ]);
+
+      // Parse token results
+      const balanceMap: Record<string, bigint> = {
+        USDC: BigInt(0),
+        EURC: BigInt(0),
+        USDT: BigInt(0),
+      };
+
+      tokenResults.forEach((result, index) => {
+        const token = tokenOrder[index];
+        if (result.status === 'success' && result.result !== undefined) {
+          balanceMap[token] = result.result as bigint;
+        } else {
+          logger.debug(`Failed to fetch ${token} balance`, result.error);
         }
-      }
+      });
 
       // Format balances (ETH has 18 decimals, stablecoins have 6)
       const formattedBalances: TokenBalance = {
         ethBalance: formatUnits(ethBalance, 18),
-        uscBalance: formatUnits(usdcBalance, 6),
-        eurcBalance: formatUnits(eurcBalance, 6),
-        usdtBalance: formatUnits(usdtBalance, 6),
+        uscBalance: formatUnits(balanceMap.USDC, 6),
+        eurcBalance: formatUnits(balanceMap.EURC, 6),
+        usdtBalance: formatUnits(balanceMap.USDT, 6),
       };
 
       logger.debug(`Balances fetched for ${getChainName(chainId)}`);
-      setBalances(formattedBalances);
+      return formattedBalances;
+    },
+    enabled: Boolean(address),
+    staleTime: 1000 * 30, // 30 seconds - balances don't change that often
+    refetchOnWindowFocus: false,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000), // Exponential backoff
+  });
 
-    } catch (err) {
-      logger.error('Error fetching token balances', err);
-      setError('Failed to fetch token balances');
-
-      setBalances({
-        ethBalance: '0.00',
-        uscBalance: '0.00',
-        eurcBalance: '0.00',
-        usdtBalance: '0.00',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [address, chainId]);
-
-  useEffect(() => {
-    if (address) {
-      fetchBalances();
-    }
-  }, [address, chainId, fetchBalances]);
-
-  return { 
-    balances, 
-    isLoading, 
-    error, 
-    refetch: fetchBalances
+  return {
+    balances: query.data ?? DEFAULT_BALANCES,
+    isLoading: query.isLoading,
+    error: query.error instanceof Error ? query.error.message : null,
+    refetch: query.refetch,
   };
 }
