@@ -15,7 +15,6 @@ import ReceiveModal from './ReceiveModal';
 import { useUserNFTs } from '../../hooks/useUserNFTs';
 import { NFTCard } from './NFTCard';
 import { logger } from '../../utils/logger';
-import ENSSection from '../ens/ENSSection';
 import SwapModal from './SwapModal';
 
 interface WalletInfoProps {
@@ -479,9 +478,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           </div>
         )}
       </div>
-
-      {/* ENS Subdomain Section */}
-      <ENSSection userAddress={wallet.address} chainId={chainId || 8453} />
 
       <div className="balance-section">
 
