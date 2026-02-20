@@ -485,6 +485,21 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           </div>
         ) : activeTab === 'tokens' ? (
           <div className="token-list">
+            {/* 1UP Balance */}
+            <div className="token-item">
+              <div className="token-info">
+                <Image src={oneupLogoUrl} alt="1UP" width={32} height={32} className="token-icon" unoptimized />
+                <div className="token-details">
+                  <span className="token-name">1up</span>
+                  <span className="token-symbol">1UP</span>
+                </div>
+              </div>
+              <div className="token-balance">
+                <div className="balance-amount">{formatTokenBalance(balances.oneupBalance || '0', 6)}</div>
+                <div className="balance-usd">{formatUsd(oneupValueUsd)}</div>
+              </div>
+            </div>
+
             {/* ETH Balance */}
             <div className="token-item">
               <div className="token-info">
@@ -527,21 +542,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
               <div className="token-balance">
                 <div className="balance-amount">{formatTokenBalance(balances.usdtBalance || '0', 6)}</div>
                 <div className="balance-usd">{formatUsd(usdtValueUsd)}</div>
-              </div>
-            </div>
-
-            {/* 1UP Balance */}
-            <div className="token-item">
-              <div className="token-info">
-                <Image src={oneupLogoUrl} alt="1UP" width={32} height={32} className="token-icon" unoptimized />
-                <div className="token-details">
-                  <span className="token-name">1up</span>
-                  <span className="token-symbol">1UP</span>
-                </div>
-              </div>
-              <div className="token-balance">
-                <div className="balance-amount">{formatTokenBalance(balances.oneupBalance || '0', 6)}</div>
-                <div className="balance-usd">{formatUsd(oneupValueUsd)}</div>
               </div>
             </div>
 
