@@ -16,7 +16,7 @@ const FALLBACK_IMAGES: Record<string, string> = {
   USDC: '/images/usdc.png',
   EURC: '/images/eurc.png',
   USDT: '/images/usdt.png',
-  '1UP': '/logo_eth_cali.png',
+  '1UP': '/images/1up.png',
   DEFAULT: '/images/token-default.png'
 };
 
