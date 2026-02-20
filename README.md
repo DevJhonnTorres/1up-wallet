@@ -342,3 +342,4 @@ This wallet is proudly sponsored by ETH CALI, making web3 accessible to everyone
 ---
 
 **Built with ❤️ by the ETH CALI community** 
+# 1up-wallet
