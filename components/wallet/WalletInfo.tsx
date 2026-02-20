@@ -4,11 +4,10 @@ import Link from 'next/link';
 import { Wallet, TokenBalance } from '../../types/index';
 import Loading from '../../components/shared/Loading';
 import { getTokenLogoUrl, formatTokenBalance } from '../../utils/tokenUtils';
-import { usePrivy, useWallets, useSendTransaction, useFundWallet } from '@privy-io/react-auth';
+import { usePrivy, useWallets, useSendTransaction } from '@privy-io/react-auth';
 import SendTokenModal from './SendTokenModal';
 import QRScanner from './QRScanner';
 import { parseUnits, encodeFunctionData } from 'viem';
-import { base, mainnet, optimism } from 'viem/chains';
 import { useTokenPrices } from '../../hooks/useTokenPrices';
 import { getTokenAddresses } from '../../utils/network';
 import ReceiveModal from './ReceiveModal';
@@ -35,7 +34,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   const { exportWallet, user } = usePrivy();
   const { wallets } = useWallets();
   const { sendTransaction } = useSendTransaction();
-  const { fundWallet } = useFundWallet();
   const { getPriceForToken } = useTokenPrices();
   const activeWallet = wallets?.[0];
 
@@ -54,9 +52,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
 
   // State for Receive modal
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
-
-  // Fund wallet state
-  const [isFunding, setIsFunding] = useState(false);
 
   // Swap modal state
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
@@ -124,32 +119,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
       await exportWallet({ address: wallet.address });
     } catch (error) {
       logger.error('Error exporting wallet', error);
-    }
-  };
-
-  // Get the viem chain object for current chainId
-  const getViemChain = () => {
-    switch (chainId) {
-      case 1: return mainnet;
-      case 10: return optimism;
-      default: return base;
-    }
-  };
-
-  // Handle fund wallet with Apple Pay / Google Pay
-  const handleFundWallet = async () => {
-    if (!wallet.address) return;
-
-    setIsFunding(true);
-    try {
-      // Privy fundWallet API - opens modal for Apple Pay / Google Pay
-      // Pass address and chain - asset and amount default to Dashboard settings
-      const viemChain = getViemChain();
-      await fundWallet({ address: wallet.address, options: { chain: viemChain } });
-    } catch (error) {
-      logger.error('Error funding wallet', error);
-    } finally {
-      setIsFunding(false);
     }
   };
 
@@ -337,19 +306,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
 
         {/* Quick Actions - Mobile First */}
         <div className="quick-actions">
-            <button
-              className="quick-action-btn fund-btn"
-              onClick={handleFundWallet}
-              disabled={isFunding}
-            >
-              <div className="action-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="4" width="20" height="16" rx="2" />
-                  <line x1="2" y1="10" x2="22" y2="10" />
-                </svg>
-              </div>
-              <span>{isFunding ? 'Loading...' : 'Buy'}</span>
-            </button>
             <button
               className="quick-action-btn swap-btn"
               onClick={() => setIsSwapModalOpen(true)}
@@ -1343,7 +1299,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
         /* Quick Actions - Professional Mobile UI */
         .quick-actions {
           display: grid;
-          grid-template-columns: repeat(5, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           gap: 0.5rem;
         }
 
@@ -1391,15 +1347,6 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
           width: 20px;
           height: 20px;
           stroke-width: 2;
-        }
-
-        .quick-action-btn.fund-btn .action-icon {
-          background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.25));
-          color: #4ade80;
-        }
-
-        .quick-action-btn.fund-btn:hover:not(:disabled) .action-icon {
-          background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.35));
         }
 
         .quick-action-btn.swap-btn .action-icon {
