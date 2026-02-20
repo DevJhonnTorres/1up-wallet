@@ -14,12 +14,13 @@ const CHAIN_IDS = {
 } as const;
 
 // Token addresses by network
-const TOKEN_ADDRESSES: Record<number, { USDC: string; EURC?: string; USDT?: string }> = {
+const TOKEN_ADDRESSES: Record<number, { USDC: string; EURC?: string; USDT?: string; ONEUP?: string }> = {
   // Base Network
   [CHAIN_IDS.BASE]: {
     USDC: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
     EURC: '0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42',
     USDT: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2',
+    ONEUP: '0xb70570fd3501878209896e4305859f3571cfb051',
   },
   // Ethereum Mainnet
   [CHAIN_IDS.ETHEREUM]: {
@@ -74,6 +75,7 @@ const DEFAULT_BALANCES: TokenBalance = {
   uscBalance: '0',
   eurcBalance: '0',
   usdtBalance: '0',
+  oneupBalance: '0',
 };
 
 /**
@@ -107,7 +109,7 @@ export function useTokenBalances(address: string | undefined, chainId: number = 
         functionName: 'balanceOf';
         args: [`0x${string}`];
       }[] = [];
-      const tokenOrder: ('USDC' | 'EURC' | 'USDT')[] = [];
+      const tokenOrder: ('USDC' | 'EURC' | 'USDT' | 'ONEUP')[] = [];
 
       if (tokens.USDC) {
         calls.push({
@@ -136,6 +138,15 @@ export function useTokenBalances(address: string | undefined, chainId: number = 
         });
         tokenOrder.push('USDT');
       }
+      if (tokens.ONEUP) {
+        calls.push({
+          address: tokens.ONEUP as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [address as `0x${string}`],
+        });
+        tokenOrder.push('ONEUP');
+      }
 
       // Fetch ETH balance and token balances in parallel (2 RPC calls instead of 4)
       const [ethBalance, tokenResults] = await Promise.all([
@@ -150,6 +161,7 @@ export function useTokenBalances(address: string | undefined, chainId: number = 
         USDC: BigInt(0),
         EURC: BigInt(0),
         USDT: BigInt(0),
+        ONEUP: BigInt(0),
       };
 
       tokenResults.forEach((result, index) => {
@@ -161,12 +173,13 @@ export function useTokenBalances(address: string | undefined, chainId: number = 
         }
       });
 
-      // Format balances (ETH has 18 decimals, stablecoins have 6)
+      // Format balances (ETH/1UP use 18 decimals, stablecoins use 6)
       const formattedBalances: TokenBalance = {
         ethBalance: formatUnits(ethBalance, 18),
         uscBalance: formatUnits(balanceMap.USDC, 6),
         eurcBalance: formatUnits(balanceMap.EURC, 6),
         usdtBalance: formatUnits(balanceMap.USDT, 6),
+        oneupBalance: formatUnits(balanceMap.ONEUP, 18),
       };
 
       logger.debug(`Balances fetched for ${getChainName(chainId)}`);

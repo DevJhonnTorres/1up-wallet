@@ -74,6 +74,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   const usdcLogoUrl = getTokenLogoUrl('USDC');
   const eurclogoUrl = getTokenLogoUrl('EURC');
   const usdtLogoUrl = getTokenLogoUrl('USDT');
+  const oneupLogoUrl = getTokenLogoUrl('1UP');
   
   // Explorer mapping per chain
   const explorerBase = (() => {
@@ -96,12 +97,14 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   const usdcPrice = getPriceForToken('USDC');
   const usdtPrice = getPriceForToken('USDT');
   const eurcPrice = getPriceForToken('EURC');
+  const oneupPrice = getPriceForToken('1UP');
 
   const ethValueUsd = parseFloat(balances.ethBalance) * ethPrice.price;
   const usdcValueUsd = parseFloat(balances.uscBalance) * usdcPrice.price;
   const usdtValueUsd = parseFloat(balances.usdtBalance || '0') * usdtPrice.price;
   const eurcValueUsd = parseFloat(balances.eurcBalance || '0') * eurcPrice.price;
-  const totalValueUsd = ethValueUsd + usdcValueUsd + usdtValueUsd + eurcValueUsd;
+  const oneupValueUsd = parseFloat(balances.oneupBalance || '0') * oneupPrice.price;
+  const totalValueUsd = ethValueUsd + usdcValueUsd + usdtValueUsd + eurcValueUsd + oneupValueUsd;
   
   // Format USD values
   const formatUsd = (value: number) => {
@@ -524,6 +527,21 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
               <div className="token-balance">
                 <div className="balance-amount">{formatTokenBalance(balances.usdtBalance || '0', 6)}</div>
                 <div className="balance-usd">{formatUsd(usdtValueUsd)}</div>
+              </div>
+            </div>
+
+            {/* 1UP Balance */}
+            <div className="token-item">
+              <div className="token-info">
+                <Image src={oneupLogoUrl} alt="1UP" width={32} height={32} className="token-icon" unoptimized />
+                <div className="token-details">
+                  <span className="token-name">1up</span>
+                  <span className="token-symbol">1UP</span>
+                </div>
+              </div>
+              <div className="token-balance">
+                <div className="balance-amount">{formatTokenBalance(balances.oneupBalance || '0', 6)}</div>
+                <div className="balance-usd">{formatUsd(oneupValueUsd)}</div>
               </div>
             </div>
 

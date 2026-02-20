@@ -16,6 +16,7 @@ const FALLBACK_IMAGES: Record<string, string> = {
   USDC: '/images/usdc.png',
   EURC: '/images/eurc.png',
   USDT: '/images/usdt.png',
+  '1UP': '/logo_eth_cali.png',
   DEFAULT: '/images/token-default.png'
 };
 
@@ -36,6 +37,8 @@ export function getTokenLogoUrl(tokenSymbol: string): string {
       return `${COINGECKO_IMAGE_URL}/26045/large/euro-coin.png`;
     case 'USDT':
       return `${COINGECKO_IMAGE_URL}/325/large/Tether.png`;
+    case '1UP':
+      return FALLBACK_IMAGES['1UP'];
     default:
       return FALLBACK_IMAGES[symbol] || FALLBACK_IMAGES.DEFAULT;
   }

@@ -12,6 +12,6 @@ export interface TokenBalance {
   uscBalance: string;
   eurcBalance: string;
   usdtBalance?: string;
+  oneupBalance?: string;
   papayosBalance?: string;
 }
-
