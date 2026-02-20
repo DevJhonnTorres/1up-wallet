@@ -27,9 +27,6 @@ const LogoutIcon = () => (
 
 const SUPPORTED_CHAINS = [
   { id: 8453, name: 'Base', logo: '/chains/base.jpeg' },
-  { id: 1, name: 'Ethereum', logo: '/chains/ethereum.png' },
-  { id: 10, name: 'Optimism', logo: '/chains/op mainnet.png' },
-  { id: 130, name: 'Unichain', logo: '/chains/unichain.png' },
 ];
 
 interface NavigationProps {
@@ -127,27 +124,6 @@ const Navigation: React.FC<NavigationProps> = ({
       rpcUrls: [getChainRpc(8453)],
       blockExplorerUrls: ['https://basescan.org'],
     },
-    1: {
-      chainId: '0x1',
-      chainName: 'Ethereum',
-      nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-      rpcUrls: [getChainRpc(1)],
-      blockExplorerUrls: ['https://etherscan.io'],
-    },
-    10: {
-      chainId: '0xa',
-      chainName: 'Optimism',
-      nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-      rpcUrls: [getChainRpc(10)],
-      blockExplorerUrls: ['https://optimistic.etherscan.io'],
-    },
-    130: {
-      chainId: '0x82',
-      chainName: 'Unichain',
-      nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-      rpcUrls: [getChainRpc(130)],
-      blockExplorerUrls: ['https://unichain.blockscout.com'],
-    },
   };
 
   // Helper to check if error indicates chain needs to be added
@@ -181,21 +157,6 @@ const Navigation: React.FC<NavigationProps> = ({
       const provider = await userWallet.getEthereumProvider();
       const chainHex = `0x${chainId.toString(16)}`;
       const chainConfig = CHAIN_CONFIGS[chainId];
-
-      // For less common chains like Unichain, try adding first
-      if (chainId === 130 && chainConfig) {
-        try {
-          await provider.request({
-            method: 'wallet_addEthereumChain',
-            params: [chainConfig],
-          });
-        } catch (addError: any) {
-          // Ignore if chain already exists (some wallets throw, some don't)
-          if (addError.code !== 4001) {
-            logger.debug('Chain add attempt', { message: addError.message });
-          }
-        }
-      }
 
       try {
         // Try to switch to the chain
@@ -237,12 +198,7 @@ const Navigation: React.FC<NavigationProps> = ({
       // Only show alert for non-user-rejected errors
       if (error.code !== 4001) {
         const chainName = SUPPORTED_CHAINS.find(c => c.id === chainId)?.name || `Chain ${chainId}`;
-        // Provide more helpful message for Unichain
-        if (chainId === 130) {
-          alert(`Unable to switch to Unichain. Your wallet may not support this network yet. Try adding it manually in your wallet settings with RPC: https://rpc.unichain.org`);
-        } else {
-          alert(`Failed to switch to ${chainName}: ${error.message || 'Unknown error'}`);
-        }
+        alert(`Failed to switch to ${chainName}: ${error.message || 'Unknown error'}`);
       }
     } finally {
       setIsSwitching(false);
@@ -293,8 +249,8 @@ const Navigation: React.FC<NavigationProps> = ({
             {/* Chain Switcher Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                disabled={isSwitching}
+                onClick={() => SUPPORTED_CHAINS.length > 1 && setIsDropdownOpen(!isDropdownOpen)}
+                disabled={isSwitching || SUPPORTED_CHAINS.length === 1}
                 className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-gray-900 border rounded-lg text-xs font-mono transition-all duration-200 ${
                   isSwitching
                     ? 'border-yellow-500/50 text-yellow-400'
@@ -311,38 +267,42 @@ const Navigation: React.FC<NavigationProps> = ({
                   )}
                 </div>
                 <span className="hidden sm:inline">{isSwitching ? 'Switching...' : currentChain.name}</span>
-                <span className={`text-gray-500 transition-transform duration-200 text-[10px] ${isDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                {SUPPORTED_CHAINS.length > 1 && (
+                  <span className={`text-gray-500 transition-transform duration-200 text-[10px] ${isDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                )}
               </button>
 
               {/* Dropdown Menu */}
-              <div
-                className={`absolute right-0 top-full mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 min-w-[160px] overflow-hidden transition-all duration-200 origin-top ${
-                  isDropdownOpen
-                    ? 'opacity-100 scale-100 translate-y-0'
-                    : 'opacity-0 scale-95 -translate-y-1 pointer-events-none'
-                }`}
-              >
-                {SUPPORTED_CHAINS.map((chain) => (
-                  <button
-                    key={chain.id}
-                    onClick={() => handleChainSwitch(chain.id)}
-                    disabled={isSwitching}
-                    className={`w-full px-3 py-2.5 text-left text-xs font-mono flex items-center gap-2 transition-all duration-150 ${
-                      displayChainId === chain.id
-                        ? 'text-cyan-400 bg-cyan-500/10'
-                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                    } ${isSwitching ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                      <Image src={chain.logo} alt={chain.name} width={20} height={20} className="w-5 h-5 rounded-full object-contain" unoptimized />
-                    </div>
-                    <span className="flex-1">{chain.name}</span>
-                    {displayChainId === chain.id && (
-                      <span className="text-cyan-400">✓</span>
-                    )}
-                  </button>
-                ))}
-              </div>
+              {SUPPORTED_CHAINS.length > 1 && (
+                <div
+                  className={`absolute right-0 top-full mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 min-w-[160px] overflow-hidden transition-all duration-200 origin-top ${
+                    isDropdownOpen
+                      ? 'opacity-100 scale-100 translate-y-0'
+                      : 'opacity-0 scale-95 -translate-y-1 pointer-events-none'
+                  }`}
+                >
+                  {SUPPORTED_CHAINS.map((chain) => (
+                    <button
+                      key={chain.id}
+                      onClick={() => handleChainSwitch(chain.id)}
+                      disabled={isSwitching}
+                      className={`w-full px-3 py-2.5 text-left text-xs font-mono flex items-center gap-2 transition-all duration-150 ${
+                        displayChainId === chain.id
+                          ? 'text-cyan-400 bg-cyan-500/10'
+                          : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      } ${isSwitching ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                        <Image src={chain.logo} alt={chain.name} width={20} height={20} className="w-5 h-5 rounded-full object-contain" unoptimized />
+                      </div>
+                      <span className="flex-1">{chain.name}</span>
+                      {displayChainId === chain.id && (
+                        <span className="text-cyan-400">✓</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Logout - Desktop */}
