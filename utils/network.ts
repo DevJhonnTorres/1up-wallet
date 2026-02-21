@@ -171,10 +171,19 @@ export function getTokenAddresses(chainId?: number): {
   USDC: string;
   USDT: string;
   EURC: string;
+  ONEUP: string;
 } {
   const cid = chainId || DEFAULT_CHAIN_ID;
+  const oneUpBase = process.env.NEXT_PUBLIC_ONEUP_BASE || '0xf6813c71e620c654ff6049a485e38d9494efabdf';
+
   if (isSupportedChain(cid)) {
-    return TOKEN_ADDRESSES[cid];
+    return {
+      ...TOKEN_ADDRESSES[cid],
+      ONEUP: cid === CHAIN_IDS.BASE ? oneUpBase : '',
+    };
   }
-  return TOKEN_ADDRESSES[CHAIN_IDS.BASE];
+  return {
+    ...TOKEN_ADDRESSES[CHAIN_IDS.BASE],
+    ONEUP: oneUpBase,
+  };
 }
