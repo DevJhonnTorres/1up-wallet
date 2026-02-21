@@ -165,13 +165,12 @@ export function getContractAddresses(chainId?: number) {
 }
 
 /**
- * Get token addresses for a chain (USDC, USDT, EURC, 1UP)
+ * Get token addresses for a chain (USDC, USDT, EURC)
  */
 export function getTokenAddresses(chainId?: number): {
   USDC: string;
   USDT: string;
   EURC: string;
-  '1UP': string;
 } {
   const cid = chainId || DEFAULT_CHAIN_ID;
   if (isSupportedChain(cid)) {

@@ -39,7 +39,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
 
   // States for send token modal
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
-  const [_selectedToken, setSelectedToken] = useState<'ETH' | 'USDC' | 'USDT' | 'EURC' | '1UP'>('ETH');
+  const [_selectedToken, setSelectedToken] = useState<'ETH' | 'USDC'>('ETH');
   const [isSendingTx, setIsSendingTx] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
 
@@ -138,9 +138,8 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     return address && address.trim() !== '' ? address : null;
   };
 
-  // Prepare available tokens for SendTokenModal - show all configured tokens regardless of balance
+  // Prepare available tokens for SendTokenModal - show all 4 tokens regardless of balance
   const availableTokens = [
-    { symbol: '1UP', balance: balances.oneupBalance || '0', name: '1up' },
     { symbol: 'ETH', balance: balances.ethBalance, name: 'Ethereum' },
     { symbol: 'USDC', balance: balances.uscBalance, name: 'USD Coin' },
     { symbol: 'USDT', balance: balances.usdtBalance || '0', name: 'Tether USD' },
@@ -152,7 +151,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     if (token) {
       const foundToken = availableTokens.find(t => t.symbol === token);
       if (foundToken) {
-        setSelectedToken(token as 'ETH' | 'USDC' | 'USDT' | 'EURC' | '1UP');
+        setSelectedToken(token as 'ETH' | 'USDC');
       }
     }
     setIsSendModalOpen(true);

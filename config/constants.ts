@@ -102,7 +102,6 @@ export const TOKEN_DECIMALS = {
   USDC: 6,
   USDT: 6,
   EURC: 6,
-  '1UP': 18,
 } as const;
 
 // =============================================================================
@@ -112,31 +111,26 @@ export const TOKEN_ADDRESSES: Record<ChainId, {
   USDC: string;
   USDT: string;
   EURC: string;
-  '1UP': string;
 }> = {
   [CHAIN_IDS.BASE]: {
     USDC: process.env.NEXT_PUBLIC_USDC_BASE || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
     USDT: process.env.NEXT_PUBLIC_USDT_BASE || '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2',
     EURC: process.env.NEXT_PUBLIC_EURC_BASE || '0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42',
-    '1UP': process.env.NEXT_PUBLIC_1UP_BASE || '0xf6813c71e620c654ff6049a485e38d9494efabdf',
   },
   [CHAIN_IDS.ETHEREUM]: {
     USDC: process.env.NEXT_PUBLIC_USDC_ETHEREUM || '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
     USDT: process.env.NEXT_PUBLIC_USDT_ETHEREUM || '0xdAC17F958D2ee523a2206206994597C13D831ec7',
     EURC: process.env.NEXT_PUBLIC_EURC_ETHEREUM || '0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c',
-    '1UP': '', // Not available on Ethereum
   },
   [CHAIN_IDS.OPTIMISM]: {
     USDC: process.env.NEXT_PUBLIC_USDC_OPTIMISM || '0x7F5c764cBc14f9669B88837ca1490cCa17c31607',
     USDT: process.env.NEXT_PUBLIC_USDT_OPTIMISM || '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58',
     EURC: '', // Not available on Optimism
-    '1UP': '', // Not available on Optimism
   },
   [CHAIN_IDS.UNICHAIN]: {
     USDC: process.env.NEXT_PUBLIC_USDC_UNICHAIN || '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
     USDT: '', // Not available on Unichain
     EURC: '', // Not available on Unichain
-    '1UP': '', // Not available on Unichain
   },
 } as const;
 
