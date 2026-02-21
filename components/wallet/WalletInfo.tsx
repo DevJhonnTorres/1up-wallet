@@ -105,6 +105,9 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
   const eurcValueUsd = parseFloat(balances.eurcBalance || '0') * eurcPrice.price;
   const oneupValueUsd = parseFloat(balances.oneupBalance || '0') * oneupPrice.price;
   const totalValueUsd = ethValueUsd + usdcValueUsd + usdtValueUsd + eurcValueUsd + oneupValueUsd;
+  const totalValueOneup = oneupPrice.price > 0
+    ? totalValueUsd / oneupPrice.price
+    : parseFloat(balances.oneupBalance || '0');
   
   // Format USD values
   const formatUsd = (value: number) => {
@@ -113,6 +116,13 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
+    }).format(value);
+  };
+
+  const formatOneUp = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
     }).format(value);
   };
   
@@ -306,7 +316,7 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
       <div className="portfolio-hero">
         <div className="portfolio-value-section">
           <span className="portfolio-label">Total Balance</span>
-          <div className="portfolio-amount">{formatUsd(totalValueUsd)}</div>
+          <div className="portfolio-amount">{formatOneUp(totalValueOneup)} 1UP</div>
         </div>
 
         {/* Quick Actions - Mobile First */}
