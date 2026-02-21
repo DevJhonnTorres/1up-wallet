@@ -39,7 +39,8 @@ export function useTokenTransfer(chainId?: number): UseTokenTransferResult {
     if (!chainId) return null;
 
     const tokenAddresses = getTokenAddresses(chainId);
-    const address = tokenAddresses[tokenSymbol as keyof typeof tokenAddresses];
+    const normalizedSymbol = tokenSymbol === '1UP' ? 'ONEUP' : tokenSymbol;
+    const address = tokenAddresses[normalizedSymbol as keyof typeof tokenAddresses];
 
     return address && address.trim() !== '' ? address : null;
   }, [chainId]);

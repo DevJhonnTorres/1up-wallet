@@ -132,7 +132,8 @@ const WalletInfo: React.FC<WalletInfoProps> = ({
     
     // Use centralized token addresses from utils/network
     const tokenAddresses = getTokenAddresses(chainId);
-    const address = tokenAddresses[tokenSymbol as keyof typeof tokenAddresses];
+    const normalizedSymbol = tokenSymbol === '1UP' ? 'ONEUP' : tokenSymbol;
+    const address = tokenAddresses[normalizedSymbol as keyof typeof tokenAddresses];
     
     // Return null if token not available on this chain (empty string)
     return address && address.trim() !== '' ? address : null;
